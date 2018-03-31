@@ -6,7 +6,7 @@ information and spoiler [
 here](https://en.wikipedia.org/wiki/DARPA_Shredder_Challenge_2011)) to
 reassemble shredded documents from a series of 5 scanned puzzles, each with
 increasing complexity.  The challenge ran for 38 days, with the winner
-completing it 3 days early to claim the $50,000 prize.
+completing it in 33 days to claim the $50,000 prize two days later.
 
 This documents an effort to take part in the reconstruction challenge assuming
 the same time constraints of the original competition. The plan of the project

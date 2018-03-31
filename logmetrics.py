@@ -11,8 +11,33 @@ import json
 import logging.handlers
 import platform
 
+# globals
+metrics_logger = None
 HOSTNAME = platform.node()
 
+'''
+from resource import getrusage as resource_usage, RUSAGE_SELF
+from time import time as timestamp
+
+
+def unix_time(function, args=tuple(), kwargs={}):
+    Return `real`, `sys` and `user` elapsed time, like UNIX's command `time`
+    You can calculate the amount of used CPU-time used by your
+    function/callable by summing `user` and `sys`. `real` is just like the wall
+    clock.
+    Note that `sys` and `user`'s resolutions are limited by the resolution of
+    the operating system's software clock (check `man 7 time` for more
+    details).
+
+    start_time, start_resources = timestamp(), resource_usage(RUSAGE_SELF)
+    function(*args, **kwargs)
+    end_resources, end_time = resource_usage(RUSAGE_SELF), timestamp()
+
+    return {'real': end_time - start_time,
+            'sys': end_resources.ru_stime - start_resources.ru_stime,
+            'user': end_resources.ru_utime - start_resources.ru_utime}
+
+'''
 class MyFormatter(logging.Formatter):
     def __init__(self, task_name=None):
         self.task_name = task_name
@@ -30,41 +55,30 @@ class MyFormatter(logging.Formatter):
         #'asctime': time.asctime(time.gmtime(record.created)),
         return json.dumps(data)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
-formatter = MyFormatter()
+def initLogger(logger_level=logging.DEBUG,
+               console_level=logging.DEBUG,
+               file_level=logging.DEBUG,
+               file_out='metrics.log'):
 
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+    # create logger
+    metrics_logger = logging.getLogger(__name__)
+    metrics_logger.setLevel(logger_level)
 
-file_handler = logging.FileHandler(filename='metrics.log')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+    formatter = MyFormatter()
 
-def hello():
-    return "Hello World!\n"
+    # create handler for console output
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(console_level)
+    metrics_logger.addHandler(console_handler)
 
+    # create handler for file output
+    if not (file_out == '' or file_out is None):
+        file_handler = logging.FileHandler(filename=file_out)
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(file_level)
+        metrics_logger.addHandler(file_handler)
 
-def log_debug_message():
-    logger.debug('debug message')
-    return "Logged debug message.\n"
-
-
-def log_info_message():
-    logger.info('info message')
-    return "Logged info message.\n"
-
-
-def log_warning_message():
-    logger.warning('warning message')
-    return "Logged warning message\n"
-
-
-if __name__ == '__main__':
-    hello()
-    log_debug_message()
-    log_info_message()
-    log_warning_message()
+    return metrics_logger
 

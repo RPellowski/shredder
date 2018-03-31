@@ -34,3 +34,6 @@
 {"function": "log_debug_message", "level": "DEBUG", "filename": "logmetrics.py", "timestring": "2018-03-30T12:40:49Z", "time": 1522413649.516508, "message": "debug message"}
 {"function": "log_info_message", "level": "INFO", "filename": "logmetrics.py", "timestring": "2018-03-30T12:40:49Z", "time": 1522413649.523955, "message": "info message"}
 {"function": "log_warning_message", "level": "WARNING", "filename": "logmetrics.py", "timestring": "2018-03-30T12:40:49Z", "time": 1522413649.524255, "message": "warning message"}
+{"function": "log_debug_message", "level": "DEBUG", "filename": "logtester.py", "timestring": "2018-03-31T13:51:57Z", "time": 1522504317.544088, "message": "debug message"}
+{"function": "log_info_message", "level": "INFO", "filename": "logtester.py", "timestring": "2018-03-31T13:51:57Z", "time": 1522504317.5545, "message": "info message"}
+{"function": "log_warning_message", "level": "WARNING", "filename": "logtester.py", "timestring": "2018-03-31T13:51:57Z", "time": 1522504317.555022, "message": "warning message"}
