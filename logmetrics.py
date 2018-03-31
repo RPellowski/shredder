@@ -38,16 +38,19 @@ def unix_time(function, args=tuple(), kwargs={}):
             'user': end_resources.ru_utime - start_resources.ru_utime}
 
 '''
-class MyFormatter(logging.Formatter):
+DATEFMT = '%Y-%m-%dT%H:%M:%SZ'
+FMT = '%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(message)s'
+
+class json_formatter(logging.Formatter):
     def __init__(self, task_name=None):
         self.task_name = task_name
 
-        super(MyFormatter, self).__init__()
+        super(json_formatter, self).__init__()
 
     def format(self, record):
         data = {'message': record.msg,
                 'time': record.created,
-                'timestring': time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(record.created)),
+                'timestring': time.strftime(DATEFMT, time.gmtime(record.created)),
                 'filename': record.filename,
                 'level': record.levelname,
                 'function': record.funcName
@@ -55,28 +58,38 @@ class MyFormatter(logging.Formatter):
         #'asctime': time.asctime(time.gmtime(record.created)),
         return json.dumps(data)
 
-
-def initLogger(logger_level=logging.DEBUG,
-               console_level=logging.DEBUG,
-               file_level=logging.DEBUG,
-               file_out='metrics.log'):
+def initLogger(logger_level = logging.DEBUG,
+               console_level = logging.DEBUG,
+               console_logging = 'text',
+               file_level = logging.DEBUG,
+               file_logging = 'json',
+               file_out = 'metrics.log'):
 
     # create logger
     metrics_logger = logging.getLogger(__name__)
     metrics_logger.setLevel(logger_level)
 
-    formatter = MyFormatter()
+    if console_logging != 'none':
+        # create handler for console output
+        console_handler = logging.StreamHandler()
+        if console_logging == 'json':
+            console_handler.setFormatter(json_formatter())
+        else:
+            # use basic formatter
+            console_handler.setFormatter(logging.Formatter(fmt = FMT,
+                                                           datefmt = DATEFMT))
+        console_handler.setLevel(console_level)
+        metrics_logger.addHandler(console_handler)
 
-    # create handler for console output
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(console_level)
-    metrics_logger.addHandler(console_handler)
-
-    # create handler for file output
-    if not (file_out == '' or file_out is None):
+    if file_logging != 'none' and not (file_out == '' or file_out is None):
+        # create handler for file output
         file_handler = logging.FileHandler(filename=file_out)
-        file_handler.setFormatter(formatter)
+        if file_logging == 'json':
+            file_handler.setFormatter(json_formatter())
+        else:
+            # use basic formatter
+            file_handler.setFormatter(logging.Formatter(fmt = FMT,
+                                                        datefmt = DATEFMT))
         file_handler.setLevel(file_level)
         metrics_logger.addHandler(file_handler)
 

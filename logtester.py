@@ -22,4 +22,6 @@ if __name__ == '__main__':
     log_debug_message()
     log_info_message()
     log_warning_message()
-
+# test
+# logging.disable() default is CRITICAL for 3.7
+# logging.disable(logging.NOTSET)
