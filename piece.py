@@ -1,6 +1,113 @@
 import json
 
-class Piece():
+class basic():
+    def reprJSON(self):
+        d = dict()
+        for k, v in self.__dict__.items():
+            if (hasattr(v, "reprJSON")):
+                d[k] = v.reprJSON()
+            else:
+                d[k] = v
+        return d
+    def __repr__(self):
+        return (json.dumps(self.__dict__))
+
+COARSEST_VIEW=8
+class Sequence(basic):
+    '''
+    Provide multiple scaled views on a series of data points. Coarse granularity
+    provides for matching a larger number of candidates while allowing more
+    false positives. Finer granularity reduces the number of false positives.
+
+    Input data points is a list of integers. A view is calculated only when
+    needed and saved so the calculation is done once. However, the coarsest view
+    is calculated on instantiation.
+
+    The class enables tracking of matches by granularity.
+    '''
+    def __init__(self, indata, useabs = True):
+        self.indata = copy(indata)
+        self.views = {}
+        self.views[1] = copy(self.indata)
+        if useabs:
+            for
+            self.indata[
+
+    def get_view(self, view):
+        a
+
+class Edge(basic):
+    '''
+    Represents a side of a piece in a way that can be compared to other pieces,
+    with high probability of match and with low probability of false positive.
+    Assumptions:
+        angle is known
+        polarity is unknown
+        metric
+            same for both sides of an edge
+            depends on absolute horizontal or vertical piece orientation
+            contains relevance to nearby colors
+    Investigations
+        blue lines as anchors
+    '''
+    def __init__(self):
+        pass
+
+    @classmethod
+    def make_edge_set(cls, blob):
+        '''
+        Given an image blob as input, create all the edges that describe the
+        piece and return them as a list.
+        '''
+        edge_set = []
+        # return cls()
+        return edge_set
+
+# This list grows as pieces are assembled into larger sized aggregations. The
+# list shrinks over time until, ideally, one assembly remains, consisting of the
+# solved puzzle.
+assemblies = []
+
+class Assembly(basic):
+    '''
+    At a minimum, contains:
+    - list of Pieces that make up the assembly
+    - layer (1:1 layer:Assembly)
+    - translation vector (used in the process of moving to another layer)
+    - representation of its edges
+    '''
+
+    def __init__(self):
+        self.pieces = []
+        self.layer = 0
+        self.xlate_x = 0
+        self.xlate_y = 0
+
+# This list is at least as large as the number of blobs. It can grow as
+# candidate blobs are created for the pieces with unknwon orientation angles and
+# polarity. When a piece is matched edgewise, its orientation angle and polarity
+# becomes known and sibling candidates can be removed from the list.
+pieces = []
+
+class Piece(basic):
+    '''
+    A Piece contains the metadata that represents the image blob of a physical
+    item. Statistics on color will tell us what algorithms to apply for angle
+    and polarity. A definite angle and polarity moves the piece into analysis
+    of edges.
+
+    If we cannot determine angle and polarity immediately, generating candidate
+    rotations could be useful as candidates will allow further processing on
+    edges. However, it expands the space so this generation must be done
+    properly.
+
+    Edge metadata will be used for matching Pieces into Assemblies (and
+    placement on a temporary or permanent layer). Once a Piece is matched, its
+    angle and polarity are known and candidates can be released.
+
+    When final assembly is complete, all Pieces will be on the same layer at the
+    destination coordinates.
+    '''
     def __init__(self, x, y, npix):
         self.src_x = x
         self.src_y = y
@@ -12,14 +119,22 @@ class Piece():
         self.src_n_bg_pix = 0
         self.src_n_other_pix = 0
         self.dst_b_angle = False
-        self.dst_angle = 0
         self.dst_b_polarity = False
-        self.dst_polarity = 0
-        #self.ghost
+        self.siblings = []  # Pieces
 
-    def __repr__(self):
-        return json.dumps(self.__dict__)
+        # features that might change across the set of temp candidates
+        self.layer = 1
+        self.dst_angle = 0
+        self.dst_polarity = 0
+        self.dst_x = x
+        self.dst_y = y
+        self.edges = []  # Edges
 
 if __name__ == "__main__":
     p = Piece(10, 10, 1000)
-    print(repr(p))
+    print(str(p))
+    a = Assembly()
+    #a.pieces.append(p)
+    print(a)
+    e = Edge()
+    print(e)

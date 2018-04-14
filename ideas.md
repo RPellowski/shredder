@@ -52,6 +52,13 @@ tools
    resources consumed
     time, cpu
 ```
+## Algorithms to consider
+
+* Chan-Vese Segmentation
+* Edge operators
+* Canny edge detector
+* Blob Detection
+* Using geometric transformations
 
 ## Outcome
 ```
