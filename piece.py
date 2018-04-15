@@ -1,4 +1,5 @@
 import json
+import copy
 
 class basic():
     def reprJSON(self):
@@ -12,7 +13,10 @@ class basic():
     def __repr__(self):
         return (json.dumps(self.__dict__))
 
-COARSEST_VIEW=8
+N_SEQ_VIEWS=8
+COARSEST_SEQ_VIEW=2**(N_SEQ_VIEWS-1)
+SEQ_VIEWS=[2**x for x in range(N_SEQ_VIEWS)]
+
 class Sequence(basic):
     '''
     Provide multiple scaled views on a series of data points. Coarse granularity
@@ -25,16 +29,36 @@ class Sequence(basic):
 
     The class enables tracking of matches by granularity.
     '''
-    def __init__(self, indata, useabs = True):
-        self.indata = copy(indata)
+    def __init__(self, indata, use_absolute = True):
+        self.indata = copy.copy(indata)
         self.views = {}
-        self.views[1] = copy(self.indata)
-        if useabs:
-            for
-            self.indata[
+        self.use_absolute = use_absolute
+        for v in SEQ_VIEWS:
+            self.views[v] = None
+        self.views[1] = copy.copy(self.indata)
+        for i, item in enumerate(self.views[1]):
+            self.views[1][i] = abs(item) if use_absolute else item
 
     def get_view(self, view):
-        a
+        '''
+        Returns an average for "view" number of samples.
+        '''
+        if self.views[view] is None:
+            #print("View", view, "not in views")
+            self.views[view] = []
+            divisor = view
+            l = len(self.views[1])
+            for i in range(0, l, view):
+                #print("1",i,divisor,l)
+                if i + divisor > l:
+                    divisor = l - i
+                    #print("new divisor", divisor)
+                item = 0
+                for j in range(divisor):
+                    item += abs(self.views[1][i + j] if self.use_absolute else item)
+                self.views[view].append((item + divisor/2)/divisor)
+                #print("2",i,divisor,l)
+        return(self.views[view])
 
 class Edge(basic):
     '''
@@ -57,10 +81,12 @@ class Edge(basic):
     def make_edge_set(cls, blob):
         '''
         Given an image blob as input, create all the edges that describe the
-        piece and return them as a list.
+        piece and return them as a list of Sequences.
         '''
-        edge_set = []
-        # return cls()
+        edge_set = {}
+        #edge_set["blue"] = []
+        #while (blue-related edges to add)
+        #    edge_set["blue"].append(cls(create sequence based on blue)))
         return edge_set
 
 # This list grows as pieces are assembled into larger sized aggregations. The
@@ -131,6 +157,7 @@ class Piece(basic):
         self.edges = []  # Edges
 
 if __name__ == "__main__":
+    '''
     p = Piece(10, 10, 1000)
     print(str(p))
     a = Assembly()
@@ -138,3 +165,16 @@ if __name__ == "__main__":
     print(a)
     e = Edge()
     print(e)
+    '''
+    import numpy as np
+    s = Sequence(range(16))
+    #list(np.array([range(17)])*np.array([-1,1,-1,1])), use_absolute = False)
+    print(s)
+    for i in SEQ_VIEWS:
+        s.get_view(i)
+    for i in SEQ_VIEWS:
+        print(s.get_view(i))
+    print(s)
+    print(SEQ_VIEWS)
+    print(N_SEQ_VIEWS)
+    print(COARSEST_SEQ_VIEW)
