@@ -58,7 +58,8 @@ tools
 * Edge operators
 * Canny edge detector
 * Blob Detection
-* Using geometric transformations
+* Using geometric transformations (for alignment to destination)
+* Circular and Elliptical Hough Transforms (find straight lines)
 
 ## Outcome
 ```
