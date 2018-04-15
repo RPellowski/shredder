@@ -102,3 +102,4 @@ ENV/
 
 # My customizations
 !metrics.log
+!activity.log
