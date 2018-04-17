@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
-import matplotlib
+#import matplotlib
+from matplotlib.widgets import Slider, Button, RadioButtons
 from skimage import io
 from skimage import color
 import logging, logmetrics
+import copy
 
 def open_rgb_image():
     global I
@@ -18,15 +20,23 @@ def convert_source_to_hsl():
 def init_hsl_params():
     global ph, ps, pl
     global phd, psd, pld
-    ph = 0.66
-    ps = 0.5
-    pl = 0.5
-    phd = 0.1
-    psd = 0.1
-    pld = 0.1
+    ph = 0.15
+    ps = 0.8
+    pl = 0.9
+    phd = 0.15
+    psd = 0.15
+    pld = 0.15
 
-function create_hsl_mask():
-    pass
+def create_hsl_mask():
+    global mask
+    mask = \
+        (H[:,:,0] > (ph - phd)) & \
+        (H[:,:,0] < (ph + phd)) & \
+        (H[:,:,1] > (ps - psd)) & \
+        (H[:,:,1] < (ps + psd)) & \
+        (H[:,:,2] > (pl - pld)) & \
+        (H[:,:,2] < (pl + pld))
+    #print(mask)
 
 def bar():
     plt.imshow(H)
@@ -59,7 +69,6 @@ def onpick(event):
     print('onpick points:', points)
 
 
-from matplotlib.widgets import Slider, Button, RadioButtons
 '''
 plots
   rgb
@@ -83,12 +92,37 @@ controls
 
 '''
 def update(val):
-    ph = 0.66
-    ps = 0.5
-    pl = 0.5
-    phd = 0.1
-    psd = 0.1
-    pld = 0.1
+    global ph, ps, pl
+    global phd, psd, pld
+    global fig, ax_list
+    global I1, I2, I3, I4
+    global hamp, samp, lamp, hdamp, sdamp, ldamp
+    global mask
+    ph = hamp.val
+    ps = samp.val
+    pl = lamp.val
+    phd = hdamp.val
+    psd = sdamp.val
+    pld = ldamp.val
+    create_hsl_mask()
+
+    ax_list[0,3].imshow(mask)
+
+    I1 = copy.copy(I)
+    I1[mask] = 0
+    ax_list[0,1].imshow(I1)
+
+    I2 = copy.copy(I)
+    I2[~(mask)] = 0
+    ax_list[0,2].imshow(I2)
+
+    I3 = copy.copy(H)
+    I3[mask] = 0
+    ax_list[1,1].imshow(I3)
+
+    I4 = copy.copy(H)
+    I4[~(mask)] = 0
+    ax_list[1,2].imshow(I4)
 
 def baz():
     amp = samp.val
@@ -97,43 +131,78 @@ def baz():
     fig.canvas.draw_idle()
 
 if __name__ == "__main__":
+    global fig, ax_list
+    global I1, I2, I3, I4
+    global hamp, samp, lamp, hdamp, sdamp, ldamp
+    global mask
     open_rgb_image()
     convert_source_to_hsl()
     init_hsl_params()
+    create_hsl_mask()
     #print(matplotlib.__version__)
     done = False
+    fig, ax_list = plt.subplots(3,4,figsize=(14,7))
+    ax_list[1, 3].axis('off')
+    ax_list[2, 0].axis('off')
+    ax_list[2, 1].axis('off')
+    ax_list[2, 2].axis('off')
+    ax_list[2, 3].axis('off')
+    plt.subplots_adjust(
+        left = 0.05,
+        right = 0.95,
+        bottom = 0.1,
+        top = 0.95,
+        wspace = 0.2,
+        hspace = 0.2)
     for i in [1]:
-        plt.figure(figsize=(11,6))
+        '''
         #display_rgb_image
-        plt.subplot(341)
-        plt.imshow(I)
+        #plt.subplot(341)
+        #plt.imshow(I)
+        ax_list[0,0].imshow(I)
+
         #display_rgb_image and mask
-        plt.subplot(342)
-        plt.imshow(I)
+        I1 = copy.copy(I)
+        I1[mask] = 0
+        #plt.subplot(342)
+        #plt.imshow(I1)
+        ax_list[0,1].imshow(I)
         #display_rgb_image and not mask
-        plt.subplot(343)
-        plt.imshow(I)
+        I2 = copy.copy(I)
+        I2[~(mask)] = 0
+        #plt.subplot(343)
+        #plt.imshow(I2)
+        ax_list[0,2].imshow(I)
 
         #display_hsl_image
-        plt.subplot(345)
-        plt.imshow(H)
+        #plt.subplot(345)
+        #plt.imshow(H)
+        ax_list[1,0].imshow(H)
         #display_hsl_image and mask
-        plt.subplot(346)
-        plt.imshow(H)
+        #plt.subplot(346)
+        #plt.imshow(H)
+        I3 = copy.copy(H)
+        I3[mask] = 0
+        ax_list[1,1].imshow(I3)
         #display_hsl_image and not mask
-        plt.subplot(347)
-        plt.imshow(H)
+        #plt.subplot(347)
+        #plt.imshow(H)
+        I4 = copy.copy(H)
+        I4[~(mask)] = 0
+        ax_list[1,2].imshow(I4)
 
         #display_mask
-        mask = H
-        plt.subplot(344)
-        plt.imshow(mask)
+        #mask = H
+        #plt.subplot(344)
+        #plt.imshow(mask)
+        ax_list[0,3].imshow(mask)
 
         #display_interactive_params
         #linebuilder = LineBuilder(line)
         #plt.subplot(2,2,4)
         #ax = plt.gca()
         #plt.gcf().canvas.mpl_connect('pick_event', onpick)
+        '''
 
         axcolor = 'lightgoldenrodyellow'
         hbar  = plt.axes([0.15, 0.30, 0.55, 0.03], facecolor=axcolor)
@@ -161,5 +230,17 @@ if __name__ == "__main__":
         sdamp.on_changed(update)
         ldamp.on_changed(update)
 
+        ax_list[0,0].imshow(I)
+        ax_list[1,0].imshow(H)
+        update(None)
         plt.show()
-
+else:
+    import numpy as np
+    x = np.array([[1, 2, 3], [4, 5, 6]]) #, np.int32)
+    print(x)
+    print(type(x))
+    print(x.shape)
+    mask = (x[:,2] %3 == 0) & (x[:,1]>3)
+    print(mask)
+    x[0] = 0
+    print(x)

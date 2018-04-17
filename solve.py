@@ -25,6 +25,9 @@ def foo():
     # See also for some properties, functions are available as well in
     # scipy.ndimage.measurements with a different API (a list is returned).
 
+    # https://www.datasciencecentral.com/profiles/blogs/interactive-image-segmentation-with-graph-cut-in-python
+    # http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html
+
     #io.find_available_plugins() #
     #plt.ioff()
     #plt.plot(I)

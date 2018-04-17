@@ -142,7 +142,7 @@ class Piece(basic):
         self.src_n_rline_pix = 0
         self.src_n_bink_pix = 0
         self.src_n_rink_pix = 0
-        self.src_n_bg_pix = 0
+        self.src_n_paper_pix = 0
         self.src_n_other_pix = 0
         self.dst_b_angle = False
         self.dst_b_polarity = False
