@@ -1,5 +1,27 @@
 # Progress log
 
+## Week 3 Retrospective
+
+### The good
+
+* Have captured a good amount of domain knowledge in code
+
+### The bad
+
+* No completed story points for this iteration
+* Started investigation into Python imaging software for the next stories- taking away from current work
+
+## Week 2 Retrospective
+
+### The good
+
+* Completed automatic filesystem activity logging and have it assigning basic
+  categories- development, documentation, other
+
+### The bad
+
+* No reports and no meaningful progress on the imaging side
+
 ## Week 1 Retrospective
 
 ### The good
