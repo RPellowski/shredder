@@ -98,30 +98,39 @@ if __name__ == '__main__':
     calculate_source_stats()
     masks = {}
     # If we need more accuracy, redo masks so that pieces = paper + colors
-    for mask in HSL_PARAMS.keys():
+    for mask in ['pieces']: #HSL_PARAMS.keys():
         masks[mask] = create_mask(mask)
     #plt.rcParams['figure.figsize'] = (14,8)
     fig, ax = plt.subplots(1,figsize=(14,8), sharex=True, sharey=True)
     I1 = copy.copy(I)
     I1[masks["pieces"]] = 0
     I1[~masks["pieces"]] = 255
-    gray = I1[500:1500,:1000,0]
+    gray = I1[:,:,0] #[500:1500,:1000,0]
     bw = closing(gray > 128, square(3))
     #cleared = clear_border(bw)
     label_image,num = label(bw,return_num=True)
     print num
+    properties = regionprops(label_image)
+    areas = 0
+    blobs = []
+    for proper in properties:
+        if proper.area > 100:
+            areas += 1
+            #print proper.area, proper.bbox, proper.centroid
+            blobs.append(proper)
+    print "areas:", areas
     #for image in label_image:
     #   print image
-    image_label_overlay = label2rgb(label_image, image=gray)
-    ax.imshow(image_label_overlay)
-    '''
-    blobs = blob_doh(gray, min_sigma=30, max_sigma=300, threshold=.01)
+    #image_label_overlay = label2rgb(label_image, image=gray)
+    ax.imshow(I1)
+    #blobs = blob_doh(gray, min_sigma=30, max_sigma=300, threshold=.01)
     for blob in blobs:
-        y, x, r = blob
+        #y, x, r = blob
+        (y1,x1,y2,x2) = blob.bbox
         #c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
-        c = plt.Rectangle((int(x - r),int(y - r)), int(2*r), int(2*r),linewidth=2,edgecolor="red",facecolor='none')
+        #c = plt.Rectangle((int(x - r),int(y - r)), int(2*r), int(2*r),linewidth=2,edgecolor="red",facecolor='none')
+        c = plt.Rectangle((int(x1),int(y1)),int(x2-x1),int(y2-y1),linewidth=2,edgecolor="red",facecolor='none')
         ax.add_patch(c)
-    '''
     plt.show()
 
     label_blobs()
