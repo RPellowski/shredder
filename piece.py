@@ -1,6 +1,14 @@
 import json
 import copy
 
+HSL_PARAMS = {
+        "paper" :     [0.15, 0.70, 0.96, 0.13, 0.17, 0.15],
+        "bluelines" : [0.18, 0.80, 0.62, 0.02, 0.31, 0.15],
+        "redlines" :  [0.10, 0.98, 0.93, 0.02, 0.15, 0.03],
+        "pieces" :    [0.90, 1.00, 0.99, 0.08, 0.25, 0.15],
+        "blackink" :  [0.01, 0.06, 0.06, 0.07, 0.07, 0.07]
+    }
+
 class basic():
     def reprJSON(self):
         d = dict()
