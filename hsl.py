@@ -27,13 +27,28 @@ def init_hsl_params():
 
 def create_hsl_mask():
     global mask
+    HL = ph - phd
+    HU = ph + phd
+    if HL < 0.0:
+        HL2 = HL + 1.0
+    else:
+        HL2 = 1.0
+    if HU > 1.0:
+        HU2 = HU - 1.0
+    else:
+        HU2 = 0.0
+    SL = ps - psd
+    SU = ps + psd
+    LL = pl - pld
+    LU = pl + pld
     mask = \
-        (H[:,:,0] > (ph - phd)) & \
-        (H[:,:,0] < (ph + phd)) & \
-        (H[:,:,1] > (ps - psd)) & \
-        (H[:,:,1] < (ps + psd)) & \
-        (H[:,:,2] > (pl - pld)) & \
-        (H[:,:,2] < (pl + pld))
+        (((H[:,:,0] >= HL) & (H[:,:,0] <= HU)) |
+            (H[:,:,0] >= HL2) |
+            (H[:,:,0] <= HU2)) & \
+        (H[:,:,1] >= (SL)) & \
+        (H[:,:,1] <= (SU)) & \
+        (H[:,:,2] >= (LL)) & \
+        (H[:,:,2] <= (LU))
     #print(type(mask),mask.dtype)
 
 def update(val):

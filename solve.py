@@ -7,6 +7,7 @@ import logging, logmetrics
 from piece import *
 import copy
 import os
+import sys
 
 DPI = 400
 def open_source_image():
@@ -35,6 +36,14 @@ def create_mask(mask):
         #print(sys.getsizeof(ms))
         HL = HSL_PARAMS[mask][0] - HSL_PARAMS[mask][3]
         HU = HSL_PARAMS[mask][0] + HSL_PARAMS[mask][3]
+        if HL < 0.0:
+            HL2 = HL + 1.0
+        else:
+            HL2 = 1.0
+        if HU > 1.0:
+            HU2 = HU - 1.0
+        else:
+            HU2 = 0.0
         SL = HSL_PARAMS[mask][1] - HSL_PARAMS[mask][4]
         SU = HSL_PARAMS[mask][1] + HSL_PARAMS[mask][4]
         LL = HSL_PARAMS[mask][2] - HSL_PARAMS[mask][5]
@@ -47,8 +56,9 @@ def create_mask(mask):
             iline = img_as_float(I[y:y+1,:,:])
             ihsv = color.rgb2hsv(iline)
             m[y] = \
-                (ihsv[:,:,0] >= HL) & \
-                (ihsv[:,:,0] <= HU) & \
+                (((ihsv[:,:,0] >= HL) & (ihsv[:,:,0] <= HU)) |
+                    (ihsv[:,:,0] >= HL2) |
+                    (ihsv[:,:,0] <= HU2)) & \
                 (ihsv[:,:,1] >= SL) & \
                 (ihsv[:,:,1] <= SU) & \
                 (ihsv[:,:,2] >= LL) & \
@@ -73,6 +83,8 @@ def label_blobs():
     I1[~masks["pieces"]] = 255
     gray = I1[:,:,0]
     bw = closing(gray > 128, square(3))
+    percentage = np.count_nonzero(bw)*100.0/bw.size
+    logger.debug({"closing":str(percentage)})
     label_image = label(bw)
     properties = regionprops(label_image)
     pieces = 0
@@ -112,13 +124,31 @@ if __name__ == '__main__':
     global masks
     logger = logmetrics.initLogger() #console_logging='json', file_logging='none')
     t0 = logmetrics.unix_time()
-    open_source_image()
-    calculate_source_stats()
-    masks = {}
-    # If we need more accuracy, redo masks so that pieces = paper + colors
-    for mask in ['pieces']: #HSL_PARAMS.keys():
-        masks[mask] = create_mask(mask)
-    (label_image, labelinfo) = label_blobs()
+    try:
+        open_source_image()
+        calculate_source_stats()
+        masks = {}
+        # If we need more accuracy, redo masks so that pieces = paper + colors
+        for mask in ['pieces']: #HSL_PARAMS.keys():
+            masks[mask] = create_mask(mask)
+        (label_image, labelinfo) = label_blobs()
+        label, bbox = labelinfo[0]
+        #print I1.shape,L1.shape
+        #np.set_printoptions(threshold=100000, linewidth=320)
+        #with open("Output.txt", "w") as text_file:
+        #    text_file.write(str(I1))
+        #    text_file.write(str(L1))
+
+        fig, ax = plt.subplots(1,figsize=(14,7))
+        (y1, x1, y2, x2) = bbox
+        I1 = I[y1:y2+1,x1:x2+1]
+        L1 = label_image[y1:y2+1,x1:x2+1]
+        I1[L1!=label] = 0
+        ax.imshow(I1)
+        plt.show()
+    except:
+        logger.debug("Encountered error")
+        raise
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))
 
