@@ -24,7 +24,7 @@ def calculate_source_stats():
         )
 
 def create_mask(mask):
-    fname = mask + '.npy'
+    fname = "mask" + mask + '.npy'
     if os.path.isfile(fname):
         logger.info("Reading mask {}".format(fname))
         m = np.load(fname)
@@ -65,7 +65,7 @@ def create_mask(mask):
                 (ihsv[:,:,2] <= LU)
             if mask=="pieces":
                 if y < 500:
-                    m[y,:1300] = True
+                    m[y,:1300] = False
         percentage = np.count_nonzero(m)*100.0/m.size
         logger.debug({mask:str(percentage)})
         np.save(fname, m)
@@ -79,8 +79,8 @@ def label_blobs():
     #from skimage.feature import blob_dog, blob_log, blob_doh
 
     I1 = copy.copy(I)
-    I1[masks["pieces"]] = 0
-    I1[~masks["pieces"]] = 255
+    I1[masks["pieces"]] = 255
+    I1[~masks["pieces"]] = 0
     gray = I1[:,:,0]
     bw = closing(gray > 128, square(3))
     percentage = np.count_nonzero(bw)*100.0/bw.size
@@ -133,19 +133,21 @@ if __name__ == '__main__':
             masks[mask] = create_mask(mask)
         (label_image, labelinfo) = label_blobs()
         label, bbox = labelinfo[0]
-        #print I1.shape,L1.shape
+
+        (y1, x1, y2, x2) = bbox
+        I1 = I[y1:y2+1,x1:x2+1]
+        L1 = label_image[y1:y2+1,x1:x2+1]
+        I1[L1!=label] = 0
+        np.save(str(label), I1)
+
         #np.set_printoptions(threshold=100000, linewidth=320)
         #with open("Output.txt", "w") as text_file:
         #    text_file.write(str(I1))
         #    text_file.write(str(L1))
 
-        fig, ax = plt.subplots(1,figsize=(14,7))
-        (y1, x1, y2, x2) = bbox
-        I1 = I[y1:y2+1,x1:x2+1]
-        L1 = label_image[y1:y2+1,x1:x2+1]
-        I1[L1!=label] = 0
-        ax.imshow(I1)
-        plt.show()
+        #fig, ax = plt.subplots(1,figsize=(14,7))
+        #ax.imshow(I1)
+        #plt.show()
     except:
         logger.debug("Encountered error")
         raise
