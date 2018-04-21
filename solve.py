@@ -133,7 +133,8 @@ if __name__ == '__main__':
             masks[mask] = create_mask(mask)
         (label_image, labelinfo) = label_blobs()
 
-        for linf in [labelinfo[0]]:
+        #fig, ax = plt.subplots(1,7,figsize=(14,7))
+        for linf in labelinfo:
             label, bbox = linf
             (y1, x1, y2, x2) = bbox
             P = I[y1:y2+1, x1:x2+1]
@@ -143,15 +144,27 @@ if __name__ == '__main__':
             if not os.path.isfile(fname):
                 logger.info("Creating: {}".format(fname))
                 np.save(fname, P)
-            piece = Piece(label, x1, y1, x2 - x1 + 1, y2 - y1 + 1)
+            w = x2 - x1 + 1
+            h = y2 - y1 + 1
+            piece = Piece(label, x1, y1, w, h)
             # P contains the pixels that are not background
             # From these, select the ones we think are useful
-            misc = copy.copy(P)
+            misc = np.ones_like(LP)
+            misc[LP != label] = 0
+            piece_pix = 0
+            #axindex = 0
+            #ax[axindex].imshow(P)
+            #axindex += 1
+            #ax[axindex].imshow(LP)
+            #axindex += 1
             for mask in ["bluelines" ,"redlines", "blackink", "paper"]:
-                M = mask[y1:y2+1, x1:x2+1]
+                M = masks[mask][y1:y2+1, x1:x2+1]
                 misc[M>0] = 0
-                pix_count = np.count_nonzero(P[M>0])
-                print mask, pix_count
+                #ax[axindex].imshow(M)
+                #axindex += 1
+                pix_count = np.count_nonzero(M)
+                piece_pix += pix_count
+                #print mask, pix_count
                 if mask == "bluelines":
                     piece.src_n_bline_pix = pix_count
                 elif mask == "redlines":
@@ -160,14 +173,21 @@ if __name__ == '__main__':
                     piece.src_n_bink_pix = pix_count
                 elif mask == "paper":
                     piece.src_n_paper_pix = pix_count
-                #    piece.src_n_misc_pix = pix_count
-                #    piece.src_n_bg_pix =
+            #ax[axindex].imshow(misc)
+            #axindex += 1
+            piece.src_n_misc_pix = np.count_nonzero(misc)
+            #print "misc", piece.src_n_misc_pix
+            piece_pix += piece.src_n_misc_pix
+            piece.src_n_bg_pix = w * h - piece_pix
+            #print "bg", piece.src_n_bg_pix
+            #print "total", w*h
             # bg
-            mname = "meta_" + str(label) + '.npy'
-            if True: #not os.path.isfile(mname):
+            mname = "cache/meta_" + str(label) + '.npy'
+            if not os.path.isfile(mname):
                 logger.info("Creating: {}".format(mname))
                 with open(mname, "w") as metafile:
                     metafile.write(str(piece))
+            #plt.show()
 
         #np.set_printoptions(threshold=100000, linewidth=320)
         #with open("Output.txt", "w") as text_file:
