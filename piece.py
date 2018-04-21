@@ -15,14 +15,6 @@ def jdefault(o):
     return {o.__class__.__name__: o.__dict__}
 
 class basic():
-    #def reprJSON(self):
-    #    d = dict()
-    #    for k, v in self.__dict__.items():
-    #        if (hasattr(v, "reprJSON")):
-    #            d[k] = v.reprJSON()
-    #        else:
-    #            d[k] = v
-    #    return d
     def __repr__(self):
         return (json.dumps(self, default=jdefault))
 
@@ -163,14 +155,16 @@ class Piece(basic):
         self.src_n_bg_pix = 0
         self.dst_b_angle = False
         self.dst_b_polarity = False
-        self.siblings = []  # Pieces
+        self.siblings = []  # Pieces, variations on angle
 
-        # features that might change across the set of temp candidates
+        # Features that might change across the set of temp candidates
         self.layer = 1
         self.dst_angle = 0
         self.dst_polarity = 0
-        self.dst_x = x
-        self.dst_y = y
+        self.dst_x = 0
+        self.dst_y = 0
+        self.dst_w = w
+        self.dst_h = h
         self.edges = []  # Edges
 
 if __name__ == "__main__":

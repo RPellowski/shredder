@@ -24,7 +24,7 @@ def calculate_source_stats():
         )
 
 def create_mask(mask):
-    fname = "mask_" + mask + '.npy'
+    fname = "cache/mask_" + mask + '.npy'
     if os.path.isfile(fname):
         logger.info("Reading mask {}".format(fname))
         m = np.load(fname)
@@ -132,17 +132,42 @@ if __name__ == '__main__':
         for mask in HSL_PARAMS.keys():
             masks[mask] = create_mask(mask)
         (label_image, labelinfo) = label_blobs()
-        for linf in labelinfo[0]:
+
+        for linf in [labelinfo[0]]:
             label, bbox = linf
             (y1, x1, y2, x2) = bbox
-            I1 = I[y1:y2+1,x1:x2+1]
-            L1 = label_image[y1:y2+1,x1:x2+1]
-            I1[L1!=label] = 0
-            fname = "src_" + str(label) + '.npy'
+            P = I[y1:y2+1, x1:x2+1]
+            LP = label_image[y1:y2+1, x1:x2+1]
+            P[LP != label] = 0
+            fname = "cache/src_" + str(label) + '.npy'
             if not os.path.isfile(fname):
-                print "creating", fname
-                np.save(fname, I1)
+                logger.info("Creating: {}".format(fname))
+                np.save(fname, P)
+            piece = Piece(label, x1, y1, x2 - x1 + 1, y2 - y1 + 1)
+            # P contains the pixels that are not background
+            # From these, select the ones we think are useful
+            misc = copy.copy(P)
+            for mask in ["bluelines" ,"redlines", "blackink", "paper"]:
+                M = mask[y1:y2+1, x1:x2+1]
+                misc[M>0] = 0
+                pix_count = np.count_nonzero(P[M>0])
+                print mask, pix_count
+                if mask == "bluelines":
+                    piece.src_n_bline_pix = pix_count
+                elif mask == "redlines":
+                    piece.src_n_rline_pix = pix_count
+                elif mask == "blackink":
+                    piece.src_n_bink_pix = pix_count
+                elif mask == "paper":
+                    piece.src_n_paper_pix = pix_count
+                #    piece.src_n_misc_pix = pix_count
+                #    piece.src_n_bg_pix =
+            # bg
             mname = "meta_" + str(label) + '.npy'
+            if True: #not os.path.isfile(mname):
+                logger.info("Creating: {}".format(mname))
+                with open(mname, "w") as metafile:
+                    metafile.write(str(piece))
 
         #np.set_printoptions(threshold=100000, linewidth=320)
         #with open("Output.txt", "w") as text_file:
