@@ -9,17 +9,22 @@ HSL_PARAMS = {
         "blackink" :  [0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
     }
 
+def jdefault(o):
+    if isinstance(o, set):
+        return list(o)
+    return {o.__class__.__name__: o.__dict__}
+
 class basic():
-    def reprJSON(self):
-        d = dict()
-        for k, v in self.__dict__.items():
-            if (hasattr(v, "reprJSON")):
-                d[k] = v.reprJSON()
-            else:
-                d[k] = v
-        return d
+    #def reprJSON(self):
+    #    d = dict()
+    #    for k, v in self.__dict__.items():
+    #        if (hasattr(v, "reprJSON")):
+    #            d[k] = v.reprJSON()
+    #        else:
+    #            d[k] = v
+    #    return d
     def __repr__(self):
-        return (json.dumps(self.__dict__))
+        return (json.dumps(self, default=jdefault))
 
 N_SEQ_VIEWS=8
 COARSEST_SEQ_VIEW=2**(N_SEQ_VIEWS-1)
@@ -142,16 +147,20 @@ class Piece(basic):
     When final assembly is complete, all Pieces will be on the same layer at the
     destination coordinates.
     '''
-    def __init__(self, x, y, npix):
+    def __init__(self, label, x, y, w, h):
+        self.label = label
         self.src_x = x
         self.src_y = y
-        self.src_n_pix = npix
+        self.src_w = w
+        self.src_h = h
+        self.src_n_pix = w * h # area of bounding box, sum of all pix
         self.src_n_bline_pix = 0
         self.src_n_rline_pix = 0
         self.src_n_bink_pix = 0
         self.src_n_rink_pix = 0
         self.src_n_paper_pix = 0
-        self.src_n_other_pix = 0
+        self.src_n_misc_pix = 0
+        self.src_n_bg_pix = 0
         self.dst_b_angle = False
         self.dst_b_polarity = False
         self.siblings = []  # Pieces
@@ -165,14 +174,14 @@ class Piece(basic):
         self.edges = []  # Edges
 
 if __name__ == "__main__":
-    '''
-    p = Piece(10, 10, 1000)
+    p = Piece(10, 10, 30, 40, 1000)
     print(str(p))
     a = Assembly()
-    #a.pieces.append(p)
+    a.pieces.append(p)
     print(a)
     e = Edge()
     print(e)
+
     '''
     import numpy as np
     s = Sequence(range(16))
@@ -186,3 +195,4 @@ if __name__ == "__main__":
     print(SEQ_VIEWS)
     print(N_SEQ_VIEWS)
     print(COARSEST_SEQ_VIEW)
+    '''

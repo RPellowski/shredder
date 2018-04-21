@@ -24,7 +24,7 @@ def calculate_source_stats():
         )
 
 def create_mask(mask):
-    fname = "mask" + mask + '.npy'
+    fname = "mask_" + mask + '.npy'
     if os.path.isfile(fname):
         logger.info("Reading mask {}".format(fname))
         m = np.load(fname)
@@ -129,16 +129,20 @@ if __name__ == '__main__':
         calculate_source_stats()
         masks = {}
         # If we need more accuracy, redo masks so that pieces = paper + colors
-        for mask in ['pieces']: #HSL_PARAMS.keys():
+        for mask in HSL_PARAMS.keys():
             masks[mask] = create_mask(mask)
         (label_image, labelinfo) = label_blobs()
-        label, bbox = labelinfo[0]
-
-        (y1, x1, y2, x2) = bbox
-        I1 = I[y1:y2+1,x1:x2+1]
-        L1 = label_image[y1:y2+1,x1:x2+1]
-        I1[L1!=label] = 0
-        np.save(str(label), I1)
+        for linf in labelinfo[0]:
+            label, bbox = linf
+            (y1, x1, y2, x2) = bbox
+            I1 = I[y1:y2+1,x1:x2+1]
+            L1 = label_image[y1:y2+1,x1:x2+1]
+            I1[L1!=label] = 0
+            fname = "src_" + str(label) + '.npy'
+            if not os.path.isfile(fname):
+                print "creating", fname
+                np.save(fname, I1)
+            mname = "meta_" + str(label) + '.npy'
 
         #np.set_printoptions(threshold=100000, linewidth=320)
         #with open("Output.txt", "w") as text_file:
