@@ -91,3 +91,9 @@ while not done
 * [https://docs.python.org/3/howto/logging-cookbook.html#using-file-rotation](https://docs.python.org/3/howto/logging-cookbook.html#using-file-rotation)
 * [http://docs.python-guide.org/en/latest/writing/logging/](http://docs.python-guide.org/en/latest/writing/logging/)
 
+* [http://scikit-image.org/docs/dev/api/skimage.measure.html#skimage.measure.regionprops](http://scikit-image.org/docs/dev/api/skimage.measure.html#skimage.measure.regionprops)
+* [http://www.scipy-lectures.org/packages/scikit-image/index.html](http://www.scipy-lectures.org/packages/scikit-image/index.html)
+* [https://www.datasciencecentral.com/profiles/blogs/interactive-image-segmentation-with-graph-cut-in-python](https://www.datasciencecentral.com/profiles/blogs/interactive-image-segmentation-with-graph-cut-in-python)
+* [http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html](http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html)
+* [https://www.toptal.com/python/computational-geometry-in-python-from-theory-to-implementation](https://www.toptal.com/python/computational-geometry-in-python-from-theory-to-implementation)
+

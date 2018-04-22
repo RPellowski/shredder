@@ -13,9 +13,6 @@ DPI = 400
 def open_source_image():
     global I
     I=io.imread('puzzle1_400dpi.tif')
-    #plt.rcParams['figure.figsize'] = (14,8)
-    #plt.imshow(I)
-    #plt.show()
 
 def calculate_source_stats():
     logger.info(
@@ -31,9 +28,6 @@ def create_mask(mask):
     else:
         logger.info("Creating mask {}".format(fname))
         m = np.zeros(I.shape[:-1], dtype=bool)
-        #for x in range(7):
-        #print(m.shape,m.size,m.dtype)
-        #print(sys.getsizeof(ms))
         HL = HSL_PARAMS[mask][0] - HSL_PARAMS[mask][3]
         HU = HSL_PARAMS[mask][0] + HSL_PARAMS[mask][3]
         if HL < 0.0:
@@ -48,8 +42,6 @@ def create_mask(mask):
         SU = HSL_PARAMS[mask][1] + HSL_PARAMS[mask][4]
         LL = HSL_PARAMS[mask][2] - HSL_PARAMS[mask][5]
         LU = HSL_PARAMS[mask][2] + HSL_PARAMS[mask][5]
-        #print(mask, ph,ps,pl,phd,psd,pld)
-        #print(HL,HU,SL,SU,LL,LU)
 
         # Have to do it line by line due to memory limitations
         for y in range(I.shape[0]):
@@ -63,6 +55,7 @@ def create_mask(mask):
                 (ihsv[:,:,1] <= SU) & \
                 (ihsv[:,:,2] >= LL) & \
                 (ihsv[:,:,2] <= LU)
+            # Very specific to puzzle 1
             if mask=="pieces":
                 if y < 500:
                     m[y,:1300] = False
@@ -73,10 +66,7 @@ def create_mask(mask):
 
 def label_blobs():
     from skimage.morphology import closing, square
-    #from skimage.segmentation import clear_border
     from skimage.measure import label, regionprops
-    #from skimage.color import label2rgb
-    #from skimage.feature import blob_dog, blob_log, blob_doh
 
     I1 = copy.copy(I)
     I1[masks["pieces"]] = 255
@@ -92,111 +82,81 @@ def label_blobs():
     for proper in properties:
         if proper.area > 100:
             pieces += 1
-            #print proper.area, proper.bbox, proper.centroid, len(proper.coords)
             labelinfo.append((proper.label, proper.bbox))
     logger.info("Labeled pieces: {}".format(pieces))
-    '''
-    fig, ax = plt.subplots(1,figsize=(14,7))
-    ax.imshow(I)
-    for _,bbox in labelinfo:
-        (y1, x1, y2, x2) = bbox
-        c = plt.Rectangle((int(x1),int(y1)), int(x2-x1), int(y2-y1),
-            linewidth=1, edgecolor="white", facecolor='none')
-        ax.add_patch(c)
-    plt.show()
-    '''
+    if False:
+        fig, ax = plt.subplots(1,figsize=(14,7))
+        ax.imshow(I)
+        for _,bbox in labelinfo:
+            (y1, x1, y2, x2) = bbox
+            c = plt.Rectangle((int(x1),int(y1)), int(x2-x1), int(y2-y1),
+                linewidth=1, edgecolor="white", facecolor='none')
+            ax.add_patch(c)
+        plt.show()
     return (label_image, labelinfo)
 
-def foo():
-    # http://scikit-image.org/docs/dev/api/skimage.measure.html#skimage.measure.regionprops
-    #http://www.scipy-lectures.org/packages/scikit-image/index.html
-    # scipy.ndimage.find_objects() is useful to return slices on object in an image.
-    # See also for some properties, functions are available as well in
-    # scipy.ndimage.measurements with a different API (a list is returned).
-    # https://www.datasciencecentral.com/profiles/blogs/interactive-image-segmentation-with-graph-cut-in-python
-    # http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html
-    # https://www.toptal.com/python/computational-geometry-in-python-from-theory-to-implementation
-    pass
+def generate_pieces_and_metadata(label_image, labelinfo):
+    for linf in labelinfo:
+        label, bbox = linf
+        (y1, x1, y2, x2) = bbox
+        P = I[y1:y2+1, x1:x2+1]
+        LP = label_image[y1:y2+1, x1:x2+1]
+        P[LP != label] = 0
+
+        # Save piece data as an np array
+        fname = "cache/src_" + str(label) + '.npy'
+        if not os.path.isfile(fname):
+            logger.info("Creating: {}".format(fname))
+            np.save(fname, P)
+
+        # Metadata starts here
+        w = x2 - x1 + 1
+        h = y2 - y1 + 1
+        # P contains the pixels that are not background
+        piece = Piece(label, x1, y1, w, h)
+
+        # From these, select the ones we think are useful
+        misc = np.ones_like(LP)
+        misc[LP != label] = 0
+        piece_pix = 0
+        for mask in ["bluelines" ,"redlines", "blackink", "paper"]:
+            M = masks[mask][y1:y2+1, x1:x2+1]
+            misc[M>0] = 0
+            pix_count = np.count_nonzero(M)
+            piece_pix += pix_count
+            if mask == "bluelines":
+                piece.src_n_bline_pix = pix_count
+            elif mask == "redlines":
+                piece.src_n_rline_pix = pix_count
+            elif mask == "blackink":
+                piece.src_n_bink_pix = pix_count
+            elif mask == "paper":
+                piece.src_n_paper_pix = pix_count
+        piece.src_n_misc_pix = np.count_nonzero(misc)
+        piece_pix += piece.src_n_misc_pix
+        piece.src_n_bg_pix = w * h - piece_pix
+
+        # Save piece metadata as a json array
+        mname = "cache/meta_" + str(label) + '.json'
+        if not os.path.isfile(mname):
+            logger.info("Creating: {}".format(mname))
+            with open(mname, "w") as metafile:
+                metafile.write(str(piece))
 
 if __name__ == '__main__':
     #io.find_available_plugins() #
     global logger
     global masks
-    logger = logmetrics.initLogger() #console_logging='json', file_logging='none')
+    logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
     try:
         open_source_image()
         calculate_source_stats()
         masks = {}
-        # If we need more accuracy, redo masks so that pieces = paper + colors
         for mask in HSL_PARAMS.keys():
             masks[mask] = create_mask(mask)
         (label_image, labelinfo) = label_blobs()
-
-        #fig, ax = plt.subplots(1,7,figsize=(14,7))
-        for linf in labelinfo:
-            label, bbox = linf
-            (y1, x1, y2, x2) = bbox
-            P = I[y1:y2+1, x1:x2+1]
-            LP = label_image[y1:y2+1, x1:x2+1]
-            P[LP != label] = 0
-            fname = "cache/src_" + str(label) + '.npy'
-            if not os.path.isfile(fname):
-                logger.info("Creating: {}".format(fname))
-                np.save(fname, P)
-            w = x2 - x1 + 1
-            h = y2 - y1 + 1
-            piece = Piece(label, x1, y1, w, h)
-            # P contains the pixels that are not background
-            # From these, select the ones we think are useful
-            misc = np.ones_like(LP)
-            misc[LP != label] = 0
-            piece_pix = 0
-            #axindex = 0
-            #ax[axindex].imshow(P)
-            #axindex += 1
-            #ax[axindex].imshow(LP)
-            #axindex += 1
-            for mask in ["bluelines" ,"redlines", "blackink", "paper"]:
-                M = masks[mask][y1:y2+1, x1:x2+1]
-                misc[M>0] = 0
-                #ax[axindex].imshow(M)
-                #axindex += 1
-                pix_count = np.count_nonzero(M)
-                piece_pix += pix_count
-                #print mask, pix_count
-                if mask == "bluelines":
-                    piece.src_n_bline_pix = pix_count
-                elif mask == "redlines":
-                    piece.src_n_rline_pix = pix_count
-                elif mask == "blackink":
-                    piece.src_n_bink_pix = pix_count
-                elif mask == "paper":
-                    piece.src_n_paper_pix = pix_count
-            #ax[axindex].imshow(misc)
-            #axindex += 1
-            piece.src_n_misc_pix = np.count_nonzero(misc)
-            #print "misc", piece.src_n_misc_pix
-            piece_pix += piece.src_n_misc_pix
-            piece.src_n_bg_pix = w * h - piece_pix
-            #print "bg", piece.src_n_bg_pix
-            #print "total", w*h
-            # bg
-            mname = "cache/meta_" + str(label) + '.npy'
-            if not os.path.isfile(mname):
-                logger.info("Creating: {}".format(mname))
-                with open(mname, "w") as metafile:
-                    metafile.write(str(piece))
-            #plt.show()
-
-        #np.set_printoptions(threshold=100000, linewidth=320)
-        #with open("Output.txt", "w") as text_file:
-        #    text_file.write(str(I1))
-        #    text_file.write(str(L1))
-
-        #fig, ax = plt.subplots(1,figsize=(14,7))
-        #ax.imshow(I1)
-        #plt.show()
+        generate_pieces_and_metadata(label_image, labelinfo)
     except:
         logger.debug("Encountered error")
         raise
