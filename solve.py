@@ -48,13 +48,13 @@ def create_mask(mask):
             iline = img_as_float(I[y:y+1,:,:])
             ihsv = color.rgb2hsv(iline)
             m[y] = \
-                (((ihsv[:,:,0] >= HL) & (ihsv[:,:,0] <= HU)) |
-                    (ihsv[:,:,0] >= HL2) |
-                    (ihsv[:,:,0] <= HU2)) & \
-                (ihsv[:,:,1] >= SL) & \
-                (ihsv[:,:,1] <= SU) & \
-                (ihsv[:,:,2] >= LL) & \
-                (ihsv[:,:,2] <= LU)
+                (((ihsv[:,:,0] > HL) & (ihsv[:,:,0] < HU)) |
+                    (ihsv[:,:,0] > HL2) |
+                    (ihsv[:,:,0] < HU2)) & \
+                (ihsv[:,:,1] > SL) & \
+                (ihsv[:,:,1] < SU) & \
+                (ihsv[:,:,2] > LL) & \
+                (ihsv[:,:,2] < LU)
             # Very specific to puzzle 1
             if mask=="pieces":
                 if y < 500:
@@ -142,6 +142,7 @@ def generate_pieces_and_metadata(label_image, labelinfo):
             logger.info("Creating: {}".format(mname))
             with open(mname, "w") as metafile:
                 metafile.write(str(piece))
+        Pieces[(label, piece.candidate)] = piece
 
 if __name__ == '__main__':
     #io.find_available_plugins() #
@@ -157,6 +158,48 @@ if __name__ == '__main__':
             masks[mask] = create_mask(mask)
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
+
+        # Now for red line test ----------------------
+        # consume label:bbox as dict
+        d = dict(labelinfo)
+        # get top red line pieces
+        top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
+        # display top red line pieces
+        if False:
+            SHOW=20
+            fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
+            for i in range(SHOW):
+                label = top[i].label
+                print label,top[i].src_n_rline_pix, d[label]
+                (y1, x1, y2, x2) = d[label]
+                P = I[y1:y2+1, x1:x2+1]
+                LP = label_image[y1:y2+1, x1:x2+1]
+                P[LP != label] = 0
+                M = masks["redlines"][y1:y2+1, x1:x2+1]
+                ax[0,i].imshow(P)
+                ax[1,i].imshow(M)
+            plt.show()
+
+        # Now for blue line test ----------------------
+        # consume label:bbox as dict
+        d = dict(labelinfo)
+        # get top blue line pieces
+        top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bline_pix, reverse=True)
+        # display top blue line pieces
+        if True:
+            SHOW=20
+            fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
+            for i in range(SHOW):
+                label = top[i].label
+                print label,top[i].src_n_bline_pix, d[label]
+                (y1, x1, y2, x2) = d[label]
+                P = I[y1:y2+1, x1:x2+1]
+                LP = label_image[y1:y2+1, x1:x2+1]
+                P[LP != label] = 0
+                M = masks["bluelines"][y1:y2+1, x1:x2+1]
+                ax[0,i].imshow(P)
+                ax[1,i].imshow(M)
+            plt.show()
     except:
         logger.debug("Encountered error")
         raise

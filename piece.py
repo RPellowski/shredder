@@ -118,7 +118,7 @@ class Assembly(basic):
 # candidate blobs are created for the pieces with unknwon orientation angles and
 # polarity. When a piece is matched edgewise, its orientation angle and polarity
 # becomes known and sibling candidates can be removed from the list.
-pieces = []
+Pieces = {}
 
 class Piece(basic):
     '''
@@ -158,6 +158,7 @@ class Piece(basic):
         self.siblings = []  # Pieces, variations on angle
 
         # Features that might change across the set of temp candidates
+        self.candidate = 0
         self.layer = 1
         self.dst_angle = 0
         self.dst_polarity = 0

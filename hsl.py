@@ -8,7 +8,9 @@ import copy
 
 def open_rgb_image():
     global I
-    I=plt.imread('hsl.tif')
+    #I=plt.imread('hsl.tif')
+    I1=plt.imread('puzzle1_400dpi.tif')
+    I=I1[2300:2801,360:461,:]
 
 def convert_source_to_hsl():
     global H
@@ -24,6 +26,8 @@ def init_hsl_params():
     phd = 0.15
     psd = 0.15
     pld = 0.15
+    (ph,ps,pl,phd,psd,pld) = (0.10, 0.98, 0.93, 0.02, 0.15, 0.01)
+    (ph,ps,pl,phd,psd,pld) = (0.18, 0.80, 0.62, 0.02, 0.31, 0.15)
 
 def create_hsl_mask():
     global mask
@@ -41,14 +45,15 @@ def create_hsl_mask():
     SU = ps + psd
     LL = pl - pld
     LU = pl + pld
+    #print HL, HU, SL, SU, LL, LU, HL2, HU2
     mask = \
-        (((H[:,:,0] >= HL) & (H[:,:,0] <= HU)) |
-            (H[:,:,0] >= HL2) |
-            (H[:,:,0] <= HU2)) & \
-        (H[:,:,1] >= (SL)) & \
-        (H[:,:,1] <= (SU)) & \
-        (H[:,:,2] >= (LL)) & \
-        (H[:,:,2] <= (LU))
+        (((H[:,:,0] > HL) & (H[:,:,0] < HU)) |
+            (H[:,:,0] > HL2) |
+            (H[:,:,0] < HU2)) & \
+        (H[:,:,1] > (SL)) & \
+        (H[:,:,1] < (SU)) & \
+        (H[:,:,2] > (LL)) & \
+        (H[:,:,2] < (LU))
     #print(type(mask),mask.dtype)
 
 def update(val):
