@@ -156,12 +156,23 @@ if __name__ == '__main__':
         masks = {}
         for mask in HSL_PARAMS.keys():
             masks[mask] = create_mask(mask)
+        if False:
+            SHOW = 1 + len(masks)
+            fig, ax = plt.subplots(1,SHOW,figsize=(14,7))
+            ax[0].imshow(I[:2000,:2000,:])
+            ax_index = 1
+            for mask in masks:
+                ax[ax_index].imshow(masks[mask][:2000,:2000])
+                ax_index += 1
+            plt.show()
+
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
 
-        # Now for red line test ----------------------
         # consume label:bbox as dict
         d = dict(labelinfo)
+
+        # Now for red line test ----------------------
         # get top red line pieces
         top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
         # display top red line pieces
@@ -181,12 +192,10 @@ if __name__ == '__main__':
             plt.show()
 
         # Now for blue line test ----------------------
-        # consume label:bbox as dict
-        d = dict(labelinfo)
         # get top blue line pieces
         top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bline_pix, reverse=True)
         # display top blue line pieces
-        if True:
+        if False:
             SHOW=20
             fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
             for i in range(SHOW):
@@ -197,6 +206,25 @@ if __name__ == '__main__':
                 LP = label_image[y1:y2+1, x1:x2+1]
                 P[LP != label] = 0
                 M = masks["bluelines"][y1:y2+1, x1:x2+1]
+                ax[0,i].imshow(P)
+                ax[1,i].imshow(M)
+            plt.show()
+
+        # Now for black ink test ----------------------
+        # get top black ink pieces
+        top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bink_pix, reverse=True)
+        # display top black ink pieces
+        if True:
+            SHOW=20
+            fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
+            for i in range(SHOW):
+                label = top[i].label
+                print label,top[i].src_n_bink_pix, d[label]
+                (y1, x1, y2, x2) = d[label]
+                P = I[y1:y2+1, x1:x2+1]
+                LP = label_image[y1:y2+1, x1:x2+1]
+                P[LP != label] = 0
+                M = masks["blackink"][y1:y2+1, x1:x2+1]
                 ax[0,i].imshow(P)
                 ax[1,i].imshow(M)
             plt.show()
