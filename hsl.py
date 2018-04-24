@@ -10,7 +10,8 @@ def open_rgb_image():
     global I
     #I=plt.imread('hsl.tif')
     I1=plt.imread('puzzle1_400dpi.tif')
-    I=I1[500:1000,:700,:]
+    #I=I1[500:1000,:700,:]
+    I=I1[2800:3400,1600:2100,:]
 
 def convert_source_to_hsl():
     global H
@@ -29,6 +30,9 @@ def init_hsl_params():
     (ph,ps,pl,phd,psd,pld) = (0.10, 0.98, 0.93, 0.02, 0.15, 0.01)
     (ph,ps,pl,phd,psd,pld) = (0.18, 0.80, 0.62, 0.02, 0.31, 0.15)
     (ph,ps,pl,phd,psd,pld) = (0.01, 0.01, 0.01, 0.10, 0.20, 0.40)
+    (ph,ps,pl,phd,psd,pld) = (0.37, 0.21, 0.35, 0.33, 1.00, 1.00)
+    (ph,ps,pl,phd,psd,pld) = (0.92, 1.00, 1.00, 0.10, 0.70, 0.30)
+    (ph,ps,pl,phd,psd,pld) = (0.52, 0.90, 0.90, 0.48, 0.48, 0.48)
 
 def create_hsl_mask():
     global mask
@@ -57,11 +61,14 @@ def create_hsl_mask():
         (H[:,:,2] < (LU))
     #print(type(mask),mask.dtype)
 
+FIX_LEAK=True
+
 def update(val):
     global ph, ps, pl
     global phd, psd, pld
     global fig, ax_list
     global I1, I2, I3, I4
+    global IM0, IM1, IM2, IM3, IM4
     global hamp, samp, lamp, hdamp, sdamp, ldamp
     global mask
     ph = hamp.val
@@ -72,25 +79,54 @@ def update(val):
     pld = ldamp.val
     create_hsl_mask()
 
-    ax_list[0,3].imshow(mask)
+    if FIX_LEAK:
+        print "update"
+        I1 = copy.copy(I)
+        I1[mask] = 0
 
-    # Note: to prevent memory leak, perform imshow once and save the result
-    # then instead of imshow() here, use im.set_data()
-    I1 = copy.copy(I)
-    I1[mask] = 0
-    ax_list[0,1].imshow(I1)
+        I2 = copy.copy(I)
+        I2[~(mask)] = 0
 
-    I2 = copy.copy(I)
-    I2[~(mask)] = 0
-    ax_list[0,2].imshow(I2)
+        I3 = copy.copy(H)
+        I3[mask] = 0
 
-    I3 = copy.copy(H)
-    I3[mask] = 0
-    ax_list[1,1].imshow(I3)
+        I4 = copy.copy(H)
+        I4[~(mask)] = 0
 
-    I4 = copy.copy(H)
-    I4[~(mask)] = 0
-    ax_list[1,2].imshow(I4)
+        if val is None:
+            ax_list[0,0].imshow(I)
+            IM1 = ax_list[0,1].imshow(I1)
+            IM2 = ax_list[0,2].imshow(I2)
+            IM0 = ax_list[0,3].imshow(mask)
+            ax_list[1,0].imshow(H)
+            IM3 = ax_list[1,1].imshow(I3)
+            IM4 = ax_list[1,2].imshow(I4)
+        else:
+            IM0.set_data(mask)
+            IM1.set_data(I1)
+            IM2.set_data(I2)
+            IM3.set_data(I3)
+            IM4.set_data(I4)
+    else:
+        ax_list[0,3].imshow(mask)
+
+        # Note: to prevent memory leak, perform imshow once and save the result
+        # then instead of imshow() here, use im.set_data()
+        I1 = copy.copy(I)
+        I1[mask] = 0
+        ax_list[0,1].imshow(I1)
+
+        I2 = copy.copy(I)
+        I2[~(mask)] = 0
+        ax_list[0,2].imshow(I2)
+
+        I3 = copy.copy(H)
+        I3[mask] = 0
+        ax_list[1,1].imshow(I3)
+
+        I4 = copy.copy(H)
+        I4[~(mask)] = 0
+        ax_list[1,2].imshow(I4)
 
 if __name__ == "__main__":
     #print(matplotlib.__version__)
@@ -136,6 +172,8 @@ if __name__ == "__main__":
     sdamp = Slider(sdbar, 'Sat delta', 0., 1.0, valinit=psd)
     ldamp = Slider(ldbar, 'Lum delta', 0., 1.0, valinit=pld)
 
+    if FIX_LEAK:
+        update(None)
     hamp.on_changed(update)
     samp.on_changed(update)
     lamp.on_changed(update)
@@ -143,8 +181,12 @@ if __name__ == "__main__":
     sdamp.on_changed(update)
     ldamp.on_changed(update)
 
-    ax_list[0,0].imshow(I)
-    ax_list[1,0].imshow(H)
-    update(None)
+    if FIX_LEAK:
+        pass
+    else:
+        ax_list[0,0].imshow(I)
+        ax_list[1,0].imshow(H)
+        update(None)
+    print "plt.show()"
     plt.show()
 

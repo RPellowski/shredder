@@ -84,7 +84,7 @@ def label_blobs():
             pieces += 1
             labelinfo.append((proper.label, proper.bbox))
     logger.info("Labeled pieces: {}".format(pieces))
-    if False:
+    if True:
         fig, ax = plt.subplots(1,figsize=(14,7))
         ax.imshow(I)
         for _,bbox in labelinfo:
@@ -214,7 +214,7 @@ if __name__ == '__main__':
         # get top black ink pieces
         top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bink_pix, reverse=True)
         # display top black ink pieces
-        if True:
+        if False:
             SHOW=20
             fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
             for i in range(SHOW):
