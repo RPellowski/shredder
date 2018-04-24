@@ -11,7 +11,8 @@ def open_rgb_image():
     #I=plt.imread('hsl.tif')
     I1=plt.imread('puzzle1_400dpi.tif')
     #I=I1[500:1000,:700,:]
-    I=I1[2800:3400,1600:2100,:]
+    #I=I1[2800:3400,1600:2100,:]
+    I=I1[2850:3550,1200:2000,:]
 
 def convert_source_to_hsl():
     global H
@@ -33,6 +34,7 @@ def init_hsl_params():
     (ph,ps,pl,phd,psd,pld) = (0.37, 0.21, 0.35, 0.33, 1.00, 1.00)
     (ph,ps,pl,phd,psd,pld) = (0.92, 1.00, 1.00, 0.10, 0.70, 0.30)
     (ph,ps,pl,phd,psd,pld) = (0.52, 0.90, 0.90, 0.48, 0.48, 0.48)
+    (ph,ps,pl,phd,psd,pld) = (0.40, 0.50, 0.50, 0.401, 0.501, 0.501)
 
 def create_hsl_mask():
     global mask
@@ -80,7 +82,6 @@ def update(val):
     create_hsl_mask()
 
     if FIX_LEAK:
-        print "update"
         I1 = copy.copy(I)
         I1[mask] = 0
 
@@ -187,6 +188,5 @@ if __name__ == "__main__":
         ax_list[0,0].imshow(I)
         ax_list[1,0].imshow(H)
         update(None)
-    print "plt.show()"
     plt.show()
 

@@ -84,7 +84,7 @@ def label_blobs():
             pieces += 1
             labelinfo.append((proper.label, proper.bbox))
     logger.info("Labeled pieces: {}".format(pieces))
-    if True:
+    if False:
         fig, ax = plt.subplots(1,figsize=(14,7))
         ax.imshow(I)
         for _,bbox in labelinfo:
