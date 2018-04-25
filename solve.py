@@ -99,7 +99,7 @@ def generate_pieces_and_metadata(label_image, labelinfo):
     for linf in labelinfo:
         label, bbox = linf
         (y1, x1, y2, x2) = bbox
-        P = I[y1:y2+1, x1:x2+1]
+        P = copy.copy(I[y1:y2+1, x1:x2+1])
         LP = label_image[y1:y2+1, x1:x2+1]
         P[LP != label] = 0
 
@@ -144,6 +144,72 @@ def generate_pieces_and_metadata(label_image, labelinfo):
                 metafile.write(str(piece))
         Pieces[(label, piece.candidate)] = piece
 
+def show_top_pieces(red=False, blue=False, black=False):
+    # consume label:bbox as dict
+    d = dict(labelinfo)
+
+    # Now for red line test ----------------------
+    # get top red line pieces
+    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
+    # display top red line pieces
+    if red:
+        SHOW=20
+        fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
+        for i in range(SHOW):
+            label = top[i].label
+            print label,top[i].src_n_rline_pix, d[label]
+            (y1, x1, y2, x2) = d[label]
+            P = I[y1:y2+1, x1:x2+1]
+            LP = label_image[y1:y2+1, x1:x2+1]
+            P[LP != label] = 0
+            M = masks["redlines"][y1:y2+1, x1:x2+1]
+            ax[0,i].imshow(P)
+            ax[1,i].imshow(M)
+        plt.show()
+
+    # Now for blue line test ----------------------
+    # get top blue line pieces
+    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bline_pix, reverse=True)
+    # display top blue line pieces
+    if blue:
+        SHOW=20
+        fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
+        for i in range(SHOW):
+            label = top[i].label
+            print label,top[i].src_n_bline_pix, d[label]
+            (y1, x1, y2, x2) = d[label]
+            P = I[y1:y2+1, x1:x2+1]
+            LP = label_image[y1:y2+1, x1:x2+1]
+            P[LP != label] = 0
+            M = masks["bluelines"][y1:y2+1, x1:x2+1]
+            ax[0,i].imshow(P)
+            ax[1,i].imshow(M)
+        plt.show()
+
+    # Now for black ink test ----------------------
+    # get top black ink pieces
+    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bink_pix, reverse=True)
+    # display top black ink pieces
+    if black:
+        SHOW=20
+        fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
+        for i in range(SHOW):
+            label = top[i].label
+            print label,top[i].src_n_bink_pix, d[label]
+            (y1, x1, y2, x2) = d[label]
+            P = I[y1:y2+1, x1:x2+1]
+            LP = label_image[y1:y2+1, x1:x2+1]
+            P[LP != label] = 0
+            M = masks["blackink"][y1:y2+1, x1:x2+1]
+            ax[0,i].imshow(P)
+            ax[1,i].imshow(M)
+        plt.show()
+
+def get_orientation_angles():
+    fig, ax = plt.subplots(1,figsize=(14,7))
+    ax.imshow(I) #[:2000,:2000,:])
+    plt.show()
+
 if __name__ == '__main__':
     #io.find_available_plugins() #
     global logger
@@ -168,66 +234,8 @@ if __name__ == '__main__':
 
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
-
-        # consume label:bbox as dict
-        d = dict(labelinfo)
-
-        # Now for red line test ----------------------
-        # get top red line pieces
-        top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
-        # display top red line pieces
-        if False:
-            SHOW=20
-            fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
-            for i in range(SHOW):
-                label = top[i].label
-                print label,top[i].src_n_rline_pix, d[label]
-                (y1, x1, y2, x2) = d[label]
-                P = I[y1:y2+1, x1:x2+1]
-                LP = label_image[y1:y2+1, x1:x2+1]
-                P[LP != label] = 0
-                M = masks["redlines"][y1:y2+1, x1:x2+1]
-                ax[0,i].imshow(P)
-                ax[1,i].imshow(M)
-            plt.show()
-
-        # Now for blue line test ----------------------
-        # get top blue line pieces
-        top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bline_pix, reverse=True)
-        # display top blue line pieces
-        if False:
-            SHOW=20
-            fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
-            for i in range(SHOW):
-                label = top[i].label
-                print label,top[i].src_n_bline_pix, d[label]
-                (y1, x1, y2, x2) = d[label]
-                P = I[y1:y2+1, x1:x2+1]
-                LP = label_image[y1:y2+1, x1:x2+1]
-                P[LP != label] = 0
-                M = masks["bluelines"][y1:y2+1, x1:x2+1]
-                ax[0,i].imshow(P)
-                ax[1,i].imshow(M)
-            plt.show()
-
-        # Now for black ink test ----------------------
-        # get top black ink pieces
-        top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bink_pix, reverse=True)
-        # display top black ink pieces
-        if False:
-            SHOW=20
-            fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
-            for i in range(SHOW):
-                label = top[i].label
-                print label,top[i].src_n_bink_pix, d[label]
-                (y1, x1, y2, x2) = d[label]
-                P = I[y1:y2+1, x1:x2+1]
-                LP = label_image[y1:y2+1, x1:x2+1]
-                P[LP != label] = 0
-                M = masks["blackink"][y1:y2+1, x1:x2+1]
-                ax[0,i].imshow(P)
-                ax[1,i].imshow(M)
-            plt.show()
+        #show_top_pieces(red=True, blue=True, black=True)
+        get_orientation_angles()
     except:
         logger.debug("Encountered error")
         raise
