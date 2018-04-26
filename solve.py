@@ -205,10 +205,80 @@ def show_top_pieces(red=False, blue=False, black=False):
             ax[1,i].imshow(M)
         plt.show()
 
+def update(val):
+    if val is None:
+        print h_threshold, h_line_length, h_line_gap
+        ax[0].imshow(M)
+        ax[1].imshow(M)
+    else:
+        ax[1].set_data(M)
+        # - create line info
+        # - update line len text box
+        # - calculate ave angle
+        # - update ave angle text box
+        '''
+        lines = probabilistic_hough_line(M, threshold=100, line_length=50,
+                                         line_gap=50)
+        print len(lines)
+        for _, angle, dist in zip(*hough_line_peaks(h, theta, dd)):
+            y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+            y1 = (dist - M.shape[1] * np.cos(angle)) / np.sin(angle)
+            ax[1].plot((0, M.shape[1]), (y0, y1), '-r')
+        '''
+
 def get_orientation_angles():
-    fig, ax = plt.subplots(1,figsize=(14,7))
-    ax.imshow(I) #[:2000,:2000,:])
-    plt.show()
+    from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+    from skimage.feature import canny
+    '''
+    if False:
+        fig, ax = plt.subplots(1,figsize=(14,7))
+        ax.imshow(I) #[:2000,:2000,:])
+        plt.show()
+    d = dict(labelinfo)
+    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
+    '''
+    global M,fig,ax
+    global h_threshold, h_line_length, h_line_gap
+    d = {
+        2:(1401L, 3625L, 1818L, 3719L),
+        3:(2421L, 2140L, 2871L, 2243L),
+        4:(1010L, 903L, 1267L, 989L)
+    }
+    fname = "cache/mask_redlines.npy"
+    if os.path.isfile(fname):
+        logger.info("Reading mask {}".format(fname))
+    mask = np.load(fname)
+    for label in [2]: #2,5):
+        (y1, x1, y2, x2) = d[label]
+        M = copy.copy(mask[y1:y2+1, x1:x2+1])
+        ### label = top[i].label
+        ### print i,label,top[i].src_n_rline_pix, d[label]
+        ### (y1, x1, y2, x2) = d[label]
+        ### #P = I[y1:y2+1, x1:x2+1]
+        ### #LP = label_image[y1:y2+1, x1:x2+1]
+        ### #P[LP != label] = 0
+        ### M = masks["redlines"][y1:y2+1, x1:x2+1]
+        ### h, theta, dd = hough_line(M)
+        ### '''
+        ### print h.shape, h.size, h.dtype
+        ### print theta.shape, theta.size, theta.dtype
+        ### print dd.shape, dd.size, dd.dtype
+        ### #print h
+        ### #print theta
+        ### #print dd
+        ### '''
+        ### #edges = canny(M, 2, 1, 25)
+        ### #print edges
+        fig, ax = plt.subplots(1,3,figsize=(14,7))
+        ax[2].axis('off')
+        h_threshold, h_line_length, h_line_gap = (10,50,50)
+        # - add bars
+        # - add sliders
+        # - add text
+        # - enable update
+        #plt.tight_layout()
+        update(None)
+        plt.show()
 
 if __name__ == '__main__':
     #io.find_available_plugins() #
@@ -217,6 +287,7 @@ if __name__ == '__main__':
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
     try:
+        '''
         open_source_image()
         calculate_source_stats()
         masks = {}
@@ -235,6 +306,7 @@ if __name__ == '__main__':
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
         #show_top_pieces(red=True, blue=True, black=True)
+        '''
         get_orientation_angles()
     except:
         logger.debug("Encountered error")
