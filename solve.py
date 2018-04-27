@@ -206,12 +206,22 @@ def show_top_pieces(red=False, blue=False, black=False):
         plt.show()
 
 def update(val):
+    global thamp, llamp, lgamp
+    global thbar, llbar, lgbar, litxt, aatxt
+    global h_threshold, h_line_length, h_line_gap
     if val is None:
         print h_threshold, h_line_length, h_line_gap
         ax[0].imshow(M)
         ax[1].imshow(M)
     else:
-        ax[1].set_data(M)
+        h_threshold = thamp.val
+        h_line_length = llamp.val
+        h_line_gap = lgamp.val
+        litxt.remove()
+        aatxt.remove()
+        litxt  = ax[2].text(0, Y1 - 3*YD, str(llamp.val))
+        aatxt  = ax[2].text(0, Y1 - 4*YD, str(lgamp.val))
+        #ax[1].set_data(M)
         # - create line info
         # - update line len text box
         # - calculate ave angle
@@ -229,6 +239,8 @@ def update(val):
 def get_orientation_angles():
     from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
     from skimage.feature import canny
+    from matplotlib.widgets import Slider, Button, RadioButtons
+    global fig, ax
     '''
     if False:
         fig, ax = plt.subplots(1,figsize=(14,7))
@@ -239,6 +251,9 @@ def get_orientation_angles():
     '''
     global M,fig,ax
     global h_threshold, h_line_length, h_line_gap
+    global thamp, llamp, lgamp
+    global thbar, llbar, lgbar, litxt, aatxt
+    global X1, Y1, YD, W1, H1
     d = {
         2:(1401L, 3625L, 1818L, 3719L),
         3:(2421L, 2140L, 2871L, 2243L),
@@ -276,8 +291,28 @@ def get_orientation_angles():
         # - add sliders
         # - add text
         # - enable update
-        #plt.tight_layout()
+        X1 = 0.7
+        Y1 = 0.8
+        YD = 0.07
+        W1 = 0.2
+        H1 = 0.03
+        thbar  = plt.axes([X1, Y1 - 0*YD, W1, H1])
+        llbar  = plt.axes([X1, Y1 - 1*YD, W1, H1])
+        lgbar  = plt.axes([X1, Y1 - 2*YD, W1, H1])
+        litxt  = ax[2].text(0, Y1 - 3*YD, "Lines")
+        aatxt  = ax[2].text(0, Y1 - 4*YD, "Ave Angle")
+
+        thamp = Slider(thbar, 'Threshold',   1., 100.0, valinit=h_threshold)
+        llamp = Slider(llbar, 'Line Length', 1., 300.0, valinit=h_line_length,
+                valfmt="%.0f")
+        lgamp = Slider(lgbar, 'Line Gap',    1., 300.0, valinit=h_line_gap)
+
         update(None)
+        thamp.on_changed(update)
+        llamp.on_changed(update)
+        lgamp.on_changed(update)
+
+        #plt.tight_layout()
         plt.show()
 
 if __name__ == '__main__':
