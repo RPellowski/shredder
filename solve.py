@@ -8,6 +8,7 @@ from piece import *
 import copy
 import os
 import sys
+from math import atan2, pi
 
 DPI = 400
 def open_source_image():
@@ -205,41 +206,45 @@ def show_top_pieces(red=False, blue=False, black=False):
             ax[1,i].imshow(M)
         plt.show()
 
+from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
+from skimage.feature import canny
+from matplotlib.widgets import Slider, Button, RadioButtons
+
 def update(val):
     global thamp, llamp, lgamp
     global thbar, llbar, lgbar, litxt, aatxt
     global h_threshold, h_line_length, h_line_gap
+    global IM
     if val is None:
-        print h_threshold, h_line_length, h_line_gap
+        #print h_threshold, h_line_length, h_line_gap
         ax[0].imshow(M)
-        ax[1].imshow(M)
-    else:
-        h_threshold = thamp.val
-        h_line_length = llamp.val
-        h_line_gap = lgamp.val
+        IM = ax[1].imshow(M)
+    if True:
+        h_threshold = int(thamp.val)
+        h_line_length = int(llamp.val)
+        h_line_gap = int(lgamp.val)
+        IM.set_data(M)
+        while len(ax[1].lines) > 0:
+            del ax[1].lines[0]
+        lines = probabilistic_hough_line(M,
+                                         threshold=h_threshold,
+                                         line_length=h_line_length,
+                                         line_gap=h_line_gap)
+        aa = 0.0
+        for line in lines:
+            p0, p1 = line
+            ax[1].plot((p0[0], p1[0]), (p0[1], p1[1]))
+            aa += atan2(p1[1] - p0[1], p1[0] - p0[0])
+        if len(lines) > 0:
+            aa = int(aa * 180.0 / pi / len(lines))
+        #if aa < 0.0:
+        #    aa = 180 + aa
         litxt.remove()
         aatxt.remove()
-        litxt  = ax[2].text(0, Y1 - 3*YD, str(llamp.val))
-        aatxt  = ax[2].text(0, Y1 - 4*YD, str(lgamp.val))
-        #ax[1].set_data(M)
-        # - create line info
-        # - update line len text box
-        # - calculate ave angle
-        # - update ave angle text box
-        '''
-        lines = probabilistic_hough_line(M, threshold=100, line_length=50,
-                                         line_gap=50)
-        print len(lines)
-        for _, angle, dist in zip(*hough_line_peaks(h, theta, dd)):
-            y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-            y1 = (dist - M.shape[1] * np.cos(angle)) / np.sin(angle)
-            ax[1].plot((0, M.shape[1]), (y0, y1), '-r')
-        '''
+        litxt  = ax[2].text(0, Y1 - 3*YD, "Lines:" + str(len(lines)))
+        aatxt  = ax[2].text(0, Y1 - 4*YD, "Ave Angle:" + str(int(aa)))
 
 def get_orientation_angles():
-    from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
-    from skimage.feature import canny
-    from matplotlib.widgets import Slider, Button, RadioButtons
     global fig, ax
     '''
     if False:
@@ -263,7 +268,7 @@ def get_orientation_angles():
     if os.path.isfile(fname):
         logger.info("Reading mask {}".format(fname))
     mask = np.load(fname)
-    for label in [2]: #2,5):
+    for label in [2, 3, 4]: #2,5):
         (y1, x1, y2, x2) = d[label]
         M = copy.copy(mask[y1:y2+1, x1:x2+1])
         ### label = top[i].label
@@ -302,10 +307,12 @@ def get_orientation_angles():
         litxt  = ax[2].text(0, Y1 - 3*YD, "Lines")
         aatxt  = ax[2].text(0, Y1 - 4*YD, "Ave Angle")
 
-        thamp = Slider(thbar, 'Threshold',   1., 100.0, valinit=h_threshold)
+        thamp = Slider(thbar, 'Threshold',   1., 100.0, valinit=h_threshold,
+                valfmt="%.0f")
         llamp = Slider(llbar, 'Line Length', 1., 300.0, valinit=h_line_length,
                 valfmt="%.0f")
-        lgamp = Slider(lgbar, 'Line Gap',    1., 300.0, valinit=h_line_gap)
+        lgamp = Slider(lgbar, 'Line Gap',    1., 300.0, valinit=h_line_gap,
+                valfmt="%.0f")
 
         update(None)
         thamp.on_changed(update)
