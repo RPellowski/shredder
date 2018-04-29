@@ -8,7 +8,7 @@ from piece import *
 import copy
 import os
 import sys
-from math import atan2, pi
+from math import atan2, pi, atan
 
 DPI = 400
 def open_source_image():
@@ -216,96 +216,72 @@ def update(val):
     global h_threshold, h_line_length, h_line_gap
     global IM
     if val is None:
-        #print h_threshold, h_line_length, h_line_gap
-        ax[0].imshow(M)
-        IM = ax[1].imshow(M)
+        ax[1].imshow(M)
+        IM = ax[2].imshow(M)
     if True:
         h_threshold = int(thamp.val)
         h_line_length = int(llamp.val)
         h_line_gap = int(lgamp.val)
         IM.set_data(M)
-        while len(ax[1].lines) > 0:
-            del ax[1].lines[0]
+        while len(ax[2].lines) > 0:
+            del ax[2].lines[0]
         lines = probabilistic_hough_line(M,
                                          threshold=h_threshold,
                                          line_length=h_line_length,
                                          line_gap=h_line_gap)
         aa = 0.0
+        aaa = []
         for line in lines:
             p0, p1 = line
-            ax[1].plot((p0[0], p1[0]), (p0[1], p1[1]))
+            ax[2].plot((p0[0], p1[0]), (p0[1], p1[1]))
             aa += atan2(p1[1] - p0[1], p1[0] - p0[0])
+            #print atan(1.0*(p1[1] - p0[1])/( p1[0] - p0[0])) * 180.0 / pi
+            if p1[0] == p0[0]:
+                theta = 90.0
+            else:
+                theta = atan(1.0*(p1[1] - p0[1])/(p1[0] - p0[0])) * 180.0 / pi
+            aaa.append(theta)
         if len(lines) > 0:
             aa = int(aa * 180.0 / pi / len(lines))
-        #if aa < 0.0:
-        #    aa = 180 + aa
+        else:
+            aaa=[0]
         litxt.remove()
         aatxt.remove()
-        litxt  = ax[2].text(0, Y1 - 3*YD, "Lines:" + str(len(lines)))
-        aatxt  = ax[2].text(0, Y1 - 4*YD, "Ave Angle:" + str(int(aa)))
+        #print np.median(aaa)
+        litxt  = ax[3].text(0, Y1 - 3*YD, "Lines:" + str(len(lines)))
+        aatxt  = ax[3].text(0, Y1 - 4*YD, "Med Angle:" + str(int(np.median(aaa))))
 
 def get_orientation_angles():
+    SHOW=30
     global fig, ax
-    '''
-    if False:
-        fig, ax = plt.subplots(1,figsize=(14,7))
-        ax.imshow(I) #[:2000,:2000,:])
-        plt.show()
-    d = dict(labelinfo)
-    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
-    '''
-    global M,fig,ax
+    global M
     global h_threshold, h_line_length, h_line_gap
     global thamp, llamp, lgamp
     global thbar, llbar, lgbar, litxt, aatxt
     global X1, Y1, YD, W1, H1
-    d = {
-        2:(1401L, 3625L, 1818L, 3719L),
-        3:(2421L, 2140L, 2871L, 2243L),
-        4:(1010L, 903L, 1267L, 989L)
-    }
-    fname = "cache/mask_redlines.npy"
-    if os.path.isfile(fname):
-        logger.info("Reading mask {}".format(fname))
-    mask = np.load(fname)
-    for label in [2, 3, 4]: #2,5):
+    d = dict(labelinfo)
+    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_rline_pix, reverse=True)
+    mask = masks["redlines"]
+    #top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bline_pix, reverse=True)
+    #mask = masks["bluelines"]
+    for i in range(SHOW):
+        label = top[i].label
         (y1, x1, y2, x2) = d[label]
         M = copy.copy(mask[y1:y2+1, x1:x2+1])
-        ### label = top[i].label
-        ### print i,label,top[i].src_n_rline_pix, d[label]
-        ### (y1, x1, y2, x2) = d[label]
-        ### #P = I[y1:y2+1, x1:x2+1]
-        ### #LP = label_image[y1:y2+1, x1:x2+1]
-        ### #P[LP != label] = 0
-        ### M = masks["redlines"][y1:y2+1, x1:x2+1]
-        ### h, theta, dd = hough_line(M)
-        ### '''
-        ### print h.shape, h.size, h.dtype
-        ### print theta.shape, theta.size, theta.dtype
-        ### print dd.shape, dd.size, dd.dtype
-        ### #print h
-        ### #print theta
-        ### #print dd
-        ### '''
-        ### #edges = canny(M, 2, 1, 25)
-        ### #print edges
-        fig, ax = plt.subplots(1,3,figsize=(14,7))
-        ax[2].axis('off')
-        h_threshold, h_line_length, h_line_gap = (10,50,50)
-        # - add bars
-        # - add sliders
-        # - add text
-        # - enable update
-        X1 = 0.7
+        h_threshold, h_line_length, h_line_gap = (10,40,35)
+        fig, ax = plt.subplots(1,4,figsize=(14,7))
+        ax[0].imshow(copy.copy(I[y1:y2+1, x1:x2+1]))
+        ax[3].axis('off')
+        X1 = 0.8
         Y1 = 0.8
         YD = 0.07
-        W1 = 0.2
+        W1 = 0.15
         H1 = 0.03
         thbar  = plt.axes([X1, Y1 - 0*YD, W1, H1])
         llbar  = plt.axes([X1, Y1 - 1*YD, W1, H1])
         lgbar  = plt.axes([X1, Y1 - 2*YD, W1, H1])
-        litxt  = ax[2].text(0, Y1 - 3*YD, "Lines")
-        aatxt  = ax[2].text(0, Y1 - 4*YD, "Ave Angle")
+        litxt  = ax[3].text(0, Y1 - 3*YD, "Lines")
+        aatxt  = ax[3].text(0, Y1 - 4*YD, "Ave Angle")
 
         thamp = Slider(thbar, 'Threshold',   1., 100.0, valinit=h_threshold,
                 valfmt="%.0f")
@@ -319,7 +295,6 @@ def get_orientation_angles():
         llamp.on_changed(update)
         lgamp.on_changed(update)
 
-        #plt.tight_layout()
         plt.show()
 
 if __name__ == '__main__':
@@ -329,7 +304,6 @@ if __name__ == '__main__':
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
     try:
-        '''
         open_source_image()
         calculate_source_stats()
         masks = {}
@@ -348,11 +322,14 @@ if __name__ == '__main__':
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
         #show_top_pieces(red=True, blue=True, black=True)
-        '''
         get_orientation_angles()
     except:
         logger.debug("Encountered error")
         raise
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))
-
+else:
+    theta = np.pi / 2 - np.arange(180) / 180.0 * np.pi
+    #theta = np.arange(180)
+    print len(theta)
+    print theta *180/np.pi
