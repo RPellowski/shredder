@@ -12,7 +12,8 @@ def open_rgb_image():
     I1=plt.imread('puzzle1_400dpi.tif')
     #I=I1[500:1000,:700,:]
     #I=I1[2800:3400,1600:2100,:]
-    I=I1[2850:3550,1200:2000,:]
+    #I=I1[2850:3550,1200:2000,:]
+    I=I1[3100:3600,1700:3300,:]
 
 def convert_source_to_hsl():
     global H
@@ -28,13 +29,13 @@ def init_hsl_params():
     phd = 0.15
     psd = 0.15
     pld = 0.15
-    (ph,ps,pl,phd,psd,pld) = (0.10, 0.98, 0.93, 0.02, 0.15, 0.01)
     (ph,ps,pl,phd,psd,pld) = (0.18, 0.80, 0.62, 0.02, 0.31, 0.15)
     (ph,ps,pl,phd,psd,pld) = (0.01, 0.01, 0.01, 0.10, 0.20, 0.40)
     (ph,ps,pl,phd,psd,pld) = (0.37, 0.21, 0.35, 0.33, 1.00, 1.00)
     (ph,ps,pl,phd,psd,pld) = (0.92, 1.00, 1.00, 0.10, 0.70, 0.30)
     (ph,ps,pl,phd,psd,pld) = (0.52, 0.90, 0.90, 0.48, 0.48, 0.48)
     (ph,ps,pl,phd,psd,pld) = (0.40, 0.50, 0.50, 0.401, 0.501, 0.501)
+    (ph,ps,pl,phd,psd,pld) = (0.10, 0.98, 0.93, 0.02, 0.15, 0.01)
 
 def create_hsl_mask():
     global mask
