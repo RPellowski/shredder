@@ -80,3 +80,5 @@ def initLogger(logger_level = logging.DEBUG,
 
     return metrics_logger
 
+# https://stackoverflow.com/questions/5191830/how-do-i-log-a-python-error-with-debug-information
+

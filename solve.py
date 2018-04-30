@@ -367,17 +367,34 @@ def get_orientation_angles(mask="bluelines", interactive=False):
             Pieces[(cur_label, 0)].dst_b_angle = True
             Pieces[(cur_label, 0)].dst_angle = aa
             #print "label:", cur_label, "angle:", aa, lines, angles
-    #ok = sum(Piece.dst_b_angle for Piece in Pieces.values())
-    #not_ok = sum(not(Piece.dst_b_angle) for Piece in Pieces.values())
-    #print len(Pieces), ok, not_ok
-    if False:
-        # Move the next lina after the aa assignment above
-        # label_image[label_image == cur_label] = 0
-        fig, ax = plt.subplots(1,figsize=(14,7))
-        IX = copy.copy(I)
-        IX[label_image == 0] = 0
-        ax.imshow(IX)
-        plt.show()
+
+from skimage import data, transform
+def view_rotations(fake=False):
+    if fake:
+        global I
+        I = data.checkerboard()
+        p = Piece(42, 0, 0, I.shape[0], I.shape[1])
+        p.dst_b_angle = True
+        p.dst_angle = 10.0
+        Pieces[(42, 0)] = p
+    for linf in labelinfo:
+        label, bbox = linf
+        (y1, x1, y2, x2) = bbox
+        P = copy.copy(I[y1:y2+1, x1:x2+1])
+        LP = label_image[y1:y2+1, x1:x2+1]
+        P[LP != label] = 0
+        #for piece in Pieces.values():
+        piece = Pieces[(label, 0)]
+        print piece.label, piece.dst_angle
+        if piece.dst_b_angle:
+            fig, ax = plt.subplots(1,3,figsize=(14,7))
+            IX = copy.copy(P)
+            IX = transform.rotate(IX, piece.dst_angle, resize=True, mode='constant', cval=0
+            )
+            ax[0].imshow(P)
+            ax[1].imshow(IX)
+            ax[2].axis('off')
+            plt.show()
 
 if __name__ == '__main__':
     #io.find_available_plugins() #
@@ -407,6 +424,7 @@ if __name__ == '__main__':
         #show_top_pieces(red=True, blue=True, black=True)
         get_orientation_angles("redlines")
         get_orientation_angles("bluelines")
+        view_rotations()
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt")
     except:
@@ -414,4 +432,8 @@ if __name__ == '__main__':
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))
 else:
-    open_source_image()
+    logger = logmetrics.initLogger()
+    t0 = logmetrics.unix_time()
+    view_rotations(fake=True)
+    t1 = logmetrics.unix_time()
+    logger.debug(logmetrics.unix_time_elapsed(t0, t1))
