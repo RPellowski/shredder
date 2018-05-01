@@ -301,11 +301,7 @@ def setup_orientation_plot():
     fig, ax = plt.subplots(1,4,figsize=(14,7))
     ax[0].imshow(P)
     ax[3].axis('off')
-    X1 = 0.8
-    Y1 = 0.8
-    YD = 0.07
-    W1 = 0.15
-    H1 = 0.03
+    (X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
     thbar  = plt.axes([X1, Y1 - 0*YD, W1, H1])
     llbar  = plt.axes([X1, Y1 - 1*YD, W1, H1])
     lgbar  = plt.axes([X1, Y1 - 2*YD, W1, H1])
@@ -345,6 +341,8 @@ def get_orientation_angles(mask="bluelines", interactive=False):
         raise
     for i in range(len(top)):
         cur_label = top[i].label
+        if Pieces[(cur_label, 0)].dst_b_angle:
+            continue
         if mask == 'redlines':
             count = Pieces[(cur_label, 0)].src_n_rline_pix
         else:
@@ -386,7 +384,7 @@ def view_rotations(fake=False):
         #for piece in Pieces.values():
         piece = Pieces[(label, 0)]
         print piece.label, piece.dst_angle
-        if piece.dst_b_angle:
+        if not piece.dst_b_angle:
             fig, ax = plt.subplots(1,3,figsize=(14,7))
             IX = copy.copy(P)
             IX = transform.rotate(IX, piece.dst_angle, resize=True, mode='constant', cval=0
@@ -396,7 +394,43 @@ def view_rotations(fake=False):
             ax[2].axis('off')
             plt.show()
 
-if __name__ == '__main__':
+def init_sr():
+    global aval
+    aval = 0.0
+
+def update_sr(val):
+    global I, IMX
+    global aval
+    IX = copy.copy(I)
+    if val is None:
+        IX = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
+        IMX = ax[1].imshow(IX)
+    else:
+        aval = aamp.val
+        IX = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
+        IMX.set_data(IX)
+
+def save_rotations(fake=False):
+    global fig, ax
+    global abar, aamp
+    if fake:
+        global I, IX
+        init_sr()
+        I = data.checkerboard()
+        if True:
+            fig, ax = plt.subplots(1,3,figsize=(14,7))
+            ax[0].imshow(I)
+            ax[2].axis('off')
+            (X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
+            abar = plt.axes([X1, Y1 - 0*YD, W1, H1])
+            aamp = Slider(abar, 'Angle', -90., 90., valinit=aval, valfmt="%.0f")
+            update_sr(None)
+            aamp.on_changed(update_sr)
+            plt.show()
+    else:
+        pass
+
+if __name__ == '__ain__':
     #io.find_available_plugins() #
     global logger
     global masks
@@ -424,7 +458,8 @@ if __name__ == '__main__':
         #show_top_pieces(red=True, blue=True, black=True)
         get_orientation_angles("redlines")
         get_orientation_angles("bluelines")
-        view_rotations()
+        #view_rotations()
+        save_rotations()
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt")
     except:
@@ -434,6 +469,6 @@ if __name__ == '__main__':
 else:
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
-    view_rotations(fake=True)
+    save_rotations(fake=True)
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))
