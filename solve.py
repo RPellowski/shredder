@@ -387,8 +387,7 @@ def view_rotations(fake=False):
         if not piece.dst_b_angle:
             fig, ax = plt.subplots(1,3,figsize=(14,7))
             IX = copy.copy(P)
-            IX = transform.rotate(IX, piece.dst_angle, resize=True, mode='constant', cval=0
-            )
+            IX = transform.rotate(IX, piece.dst_angle, resize=True, mode='constant', cval=0)
             ax[0].imshow(P)
             ax[1].imshow(IX)
             ax[2].axis('off')
@@ -408,7 +407,33 @@ def update_sr(val):
     else:
         aval = aamp.val
         IX = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
-        IMX.set_data(IX)
+        # -----
+        # Lots of garbage here, unsuccessfully trying to get around a bug in matplotlib
+        # 2.0.2 where axes are not updated correctly with relim/autoscale after
+        # set_data().  Can't use imshow(), because there is a memory leak with that
+        if False:
+            IMX.set_data(None)
+            del IMX
+            IMX = ax[1].imshow(IX)
+        else:
+            IMX.set_data(IX)
+        print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
+        #IMX.set_extent(IMX.get_extent())
+        if False:
+            ax[1].relim()
+        else:
+            ax[1].axes.ignore_existing_data_limits = True
+            xmin, xmax, ymin, ymax = IMX.get_extent()
+            #ax[1].axes.update_datalim(
+            ax[1].axes.dataLim.update_from_data_xy(((xmin, ymin), (xmax, ymax)),
+                                             ax[1].axes.ignore_existing_data_limits,
+                                             updatex=True, updatey=True)
+            ax[1].axes.ignore_existing_data_limits = False
+
+        ax[1].autoscale(enable=True, tight=None)
+        print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
+        #plt.draw()
+        # -----
 
 def save_rotations(fake=False):
     global fig, ax
@@ -467,6 +492,17 @@ if __name__ == '__ain__':
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))
 else:
+    '''
+    import matplotlib
+    import numpy
+    import skimage
+    print matplotlib.__version__
+    print numpy.__version__
+    print skimage.__version__
+    2.0.2
+    1.14.2
+    0.13.1
+    '''
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
     save_rotations(fake=True)
