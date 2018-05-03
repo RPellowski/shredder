@@ -395,6 +395,36 @@ def view_rotations(fake=False):
 
 def init_sr():
     global aval
+    global SRP
+    # This dict holds parameters for setup of the visual elements
+    (X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
+    SRP = {
+        "ix"           : 1,
+        "iy"           : 3,
+        "fig"          : None,
+        "ax"           : None,
+        "axidx_map"    : 0,
+        "axidx_piece"  : 1,
+        "axidx_off"    : [2],
+        "bar_label"    : [X1, Y1 - 0*YD, W1, H1],
+        "slider_label" : [],
+        "text_label"   : [],
+        "text_bangle"  : [],
+        "text_angle"   : [],
+        "text_bpol"    : [],
+        "text_pol"     : [],
+        "text_result"  : [],
+        "image_map"    : None,
+        "aximg_map"    : None,
+        "image_piece"  : None,
+        "aximg_piece"  : None,
+        "bar_save"     : [],
+        "btn_save"     : None,
+        "bar_angles"   : [],
+        "radio_angles" : None,
+        "bar_pol"      : [],
+        "radio_pol"    : None,
+        }
     aval = 0.0
 
 def update_sr(val):
@@ -417,7 +447,7 @@ def update_sr(val):
             IMX = ax[1].imshow(IX)
         else:
             IMX.set_data(IX)
-        print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
+       # print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
         #IMX.set_extent(IMX.get_extent())
         if False:
             ax[1].relim()
@@ -431,26 +461,33 @@ def update_sr(val):
             ax[1].axes.ignore_existing_data_limits = False
 
         ax[1].autoscale(enable=True, tight=None)
-        print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
+        #print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
         #plt.draw()
         # -----
 
 def save_rotations(fake=False):
     global fig, ax
     global abar, aamp
+    global IX,IMX
     if fake:
         global I, IX
         init_sr()
         I = data.checkerboard()
         if True:
-            fig, ax = plt.subplots(1,3,figsize=(14,7))
-            ax[0].imshow(I)
-            ax[2].axis('off')
-            (X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
-            abar = plt.axes([X1, Y1 - 0*YD, W1, H1])
+            SRP["fig"], ax = plt.subplots(SRP["ix"],SRP["iy"],figsize=(14,7))
+            SRP["ax"] = np.atleast_1d(ax.ravel())
+            SRP["aximg_map"] = SRP["ax"][SRP["axidx_map"]].imshow(I)
+            SRP["aximg_piece"] = SRP["ax"][SRP["axidx_piece"]].imshow(I)
+            for idx in SRP["axidx_off"]:
+                SRP["ax"][idx].axis('off')
+            #(X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
+            abar = plt.axes(SRP["bar_label"])
             aamp = Slider(abar, 'Angle', -90., 90., valinit=aval, valfmt="%.0f")
-            update_sr(None)
-            aamp.on_changed(update_sr)
+            #update_sr(None)
+            IX = copy.copy(I)
+            IX = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
+            IMX = SRP["ax"][SRP["axidx_piece"]].imshow(IX)
+            #aamp.on_changed(update_sr)
             plt.show()
     else:
         pass
