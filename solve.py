@@ -397,20 +397,30 @@ def init_sr():
     global aval
     global SRP
     # This dict holds parameters for setup of the visual elements
-    (X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
+    global ignore_sr_update
+    (X1, Y1, YD, W1, H1) = (0.1, 0.4, 0.07, 0.8, 0.03)
     SRP = {
-        "ix"           : 1,
-        "iy"           : 3,
+        "iy"           : 2,
+        "ix"           : 2,
         "fig"          : None,
         "ax"           : None,
         "axidx_map"    : 0,
         "axidx_piece"  : 1,
-        "axidx_off"    : [2],
+        "axidx_off"    : [2,3],
         "bar_label"    : [X1, Y1 - 0*YD, W1, H1],
-        "slider_label" : [],
-        "text_label"   : [],
-        "text_bangle"  : [],
-        "text_angle"   : [],
+        "slider_label" : None,
+        "info_label"   : ["Label", 0, 500, "%.0f"],
+        "bar_angles"   : [0.2, Y1 - 2*YD, 0.07, 4*H1],
+        "info_angles"  : [("True", "False", "All")],
+        "text_angles"  : [0.1, Y1 - 1*YD, "Show Angles"],
+        "radio_angles" : None,
+        "bar_pols"     : [0.5, Y1 - 2*YD, 0.07, 4*H1],
+        "info_pols"    : [("True", "False", "All")],
+        "text_pols"    : [0.4, Y1 - 1*YD, "Show Polarization"],
+        "radio_pols"   : None,
+        "text_bangle"  : [0.1, Y1 - 2.5*YD, "Angle Bool:"],
+        "text_angle"   : [0.1, Y1 - 3*YD, "Angle:"],
+
         "text_bpol"    : [],
         "text_pol"     : [],
         "text_result"  : [],
@@ -418,18 +428,25 @@ def init_sr():
         "aximg_map"    : None,
         "image_piece"  : None,
         "aximg_piece"  : None,
-        "bar_save"     : [],
+        "bar_save"     : [X1, Y1 - 1*YD, W1, H1],
+        "info_save"    : ["Save"],
         "btn_save"     : None,
-        "bar_angles"   : [],
-        "radio_angles" : None,
-        "bar_pol"      : [],
-        "radio_pol"    : None,
         }
     aval = 0.0
+    ignore_sr_update = False
 
 def update_sr(val):
     global I, IMX
     global aval
+    global ignore_sr_update
+    if ignore_sr_update:
+        return
+    #ignore_sr_update = True
+    #print SRP["slider_angle"].val
+    #SRP["slider_angle"].set_val(15)
+    #ignore_sr_update = False
+
+def foo():
     IX = copy.copy(I)
     if val is None:
         IX = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
@@ -466,28 +483,40 @@ def update_sr(val):
         # -----
 
 def save_rotations(fake=False):
-    global fig, ax
-    global abar, aamp
-    global IX,IMX
     if fake:
-        global I, IX
+        global I
         init_sr()
         I = data.checkerboard()
         if True:
-            SRP["fig"], ax = plt.subplots(SRP["ix"],SRP["iy"],figsize=(14,7))
+            SRP["fig"], ax = plt.subplots(SRP["iy"],SRP["ix"],figsize=(14,7))
             SRP["ax"] = np.atleast_1d(ax.ravel())
             SRP["aximg_map"] = SRP["ax"][SRP["axidx_map"]].imshow(I)
             SRP["aximg_piece"] = SRP["ax"][SRP["axidx_piece"]].imshow(I)
             for idx in SRP["axidx_off"]:
                 SRP["ax"][idx].axis('off')
-            #(X1, Y1, YD, W1, H1) = (0.8, 0.8, 0.07, 0.15, 0.03)
-            abar = plt.axes(SRP["bar_label"])
-            aamp = Slider(abar, 'Angle', -90., 90., valinit=aval, valfmt="%.0f")
+
+            bar = plt.axes(SRP["bar_label"])
+            SRP["slider_angle"] = Slider(bar, SRP["info_label"][0],
+                SRP["info_label"][1], SRP["info_label"][2], valinit=aval,
+                valfmt=SRP["info_label"][3])
+
+            plt.text(SRP["text_angles"][0], SRP["text_angles"][1], SRP["text_angles"][2],transform=SRP["fig"].transFigure)
+            bar = plt.axes(SRP["bar_angles"])
+            SRP["radio_angles"] = RadioButtons(bar, SRP["info_angles"][0])
+            plt.text(SRP["text_bangle"][0], SRP["text_bangle"][1], SRP["text_bangle"][2],transform=SRP["fig"].transFigure)
+            plt.text(SRP["text_angle"][0], SRP["text_angle"][1], SRP["text_angle"][2],transform=SRP["fig"].transFigure)
+
+            plt.text(SRP["text_pols"][0], SRP["text_pols"][1], SRP["text_pols"][2],transform=SRP["fig"].transFigure)
+            bar = plt.axes(SRP["bar_pols"])
+            SRP["radio_pols"] = RadioButtons(bar, SRP["info_pols"][0])
+
+            #bar = plt.axes(SRP["bar_save"])
+
             #update_sr(None)
             IX = copy.copy(I)
-            IX = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
-            IMX = SRP["ax"][SRP["axidx_piece"]].imshow(IX)
-            #aamp.on_changed(update_sr)
+            SRP["image_map"] = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
+            SRP["aximg_map"] = SRP["ax"][SRP["axidx_piece"]].imshow(SRP["image_map"])
+            SRP["slider_angle"].on_changed(update_sr)
             plt.show()
     else:
         pass
