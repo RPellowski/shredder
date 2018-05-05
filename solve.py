@@ -93,10 +93,10 @@ def create_mask(mask):
         np.save(fname, m)
     return m
 
-def label_blobs():
-    from skimage.morphology import closing, square
-    from skimage.measure import label, regionprops
+from skimage.morphology import closing, square
+from skimage.measure import label, regionprops
 
+def label_blobs():
     I1 = copy.copy(I)
     I1[masks["pieces"]] = 255
     I1[~masks["pieces"]] = 0
@@ -396,9 +396,19 @@ def view_rotations(fake=False):
 def init_sr():
     global aval
     global SRP
-    # This dict holds parameters for setup of the visual elements
     global ignore_sr_update
+
+    if False:
+        # How to get a piece by label
+        label = mylabels[0]
+        (y1, x1, y2, x2) = labelinfo[label]
+        # Create P, the piece
+        P = copy.copy(I[y1:y2+1, x1:x2+1])
+        LP = label_image[y1:y2+1, x1:x2+1]
+        P[LP != label] = 0
+
     (X1, Y1, YD, W1, H1) = (0.1, 0.4, 0.07, 0.8, 0.03)
+    # This dict holds parameters for setup of the visual elements
     SRP = {
         "iy"           : 2,
         "ix"           : 2,
@@ -412,27 +422,27 @@ def init_sr():
         "info_label"   : ["Label", 0, 500, "%.0f"],
         "bar_angles"   : [0.2, Y1 - 2*YD, 0.07, 4*H1],
         "info_angles"  : [("True", "False", "All")],
-        "text_angles"  : [0.1, Y1 - 1*YD, "Show Angles"],
+        "text_angles"  : [0.1, Y1 - 1*YD, "Show Angles:"],
         "radio_angles" : None,
-        "bar_pols"     : [0.5, Y1 - 2*YD, 0.07, 4*H1],
+        "bar_pols"     : [0.4, Y1 - 2*YD, 0.07, 4*H1],
         "info_pols"    : [("True", "False", "All")],
-        "text_pols"    : [0.4, Y1 - 1*YD, "Show Polarization"],
+        "text_pols"    : [0.3, Y1 - 1*YD, "Show Polarizations:"],
         "radio_pols"   : None,
         "text_bangle"  : [0.1, Y1 - 2.5*YD, "Angle Bool:"],
         "text_angle"   : [0.1, Y1 - 3*YD, "Angle:"],
-
-        "text_bpol"    : [],
-        "text_pol"     : [],
-        "text_result"  : [],
+        "text_bpol"    : [0.3, Y1 - 2.5*YD, "Pol Bool:"],
+        "text_pol"     : [0.3, Y1 - 3*YD, "Pol:"],
+        "text_result"  : [0.5, Y1 - 3*YD, "Resultant Angle:"],
         "image_map"    : None,
         "aximg_map"    : None,
         "image_piece"  : None,
         "aximg_piece"  : None,
-        "bar_save"     : [X1, Y1 - 1*YD, W1, H1],
+        "bar_save"     : [0.7, Y1 - 3*YD, 0.05, 2*H1],
         "info_save"    : ["Save"],
         "btn_save"     : None,
+        #val_label = 0.0
         }
-    aval = 0.0
+    aval = 0
     ignore_sr_update = False
 
 def update_sr(val):
@@ -484,9 +494,34 @@ def foo():
 
 def save_rotations(fake=False):
     if fake:
+        # Create I, the image
         global I
+        v=75
+        I = data.coins()[v:-v,v:-v]
+
+        # Create label_info, dict of pieces with labels and bounding boxes
+        from skimage.filters import threshold_otsu
+        thresh = threshold_otsu(I)
+        bw = closing(I > thresh, square(3))
+        label_image = label(bw)
+        properties = regionprops(label_image)
+        labelinfo = {}
+        for proper in properties:
+            if proper.area > 100:
+                labelinfo[proper.label] = proper.bbox
+
+        # Create mylabels, a sorted list of labels for use as identifiers
+        global mylabels
+        mylabels = sorted(labelinfo)
+
+        # Create masks["pieces"], for use as in main
+        global masks
+        masks = {}
+        m = copy.copy(label_image)
+        m[label_image > 0] = 255
+        masks["pieces"] = m
+
         init_sr()
-        I = data.checkerboard()
         if True:
             SRP["fig"], ax = plt.subplots(SRP["iy"],SRP["ix"],figsize=(14,7))
             SRP["ax"] = np.atleast_1d(ax.ravel())
@@ -509,11 +544,16 @@ def save_rotations(fake=False):
             plt.text(SRP["text_pols"][0], SRP["text_pols"][1], SRP["text_pols"][2],transform=SRP["fig"].transFigure)
             bar = plt.axes(SRP["bar_pols"])
             SRP["radio_pols"] = RadioButtons(bar, SRP["info_pols"][0])
+            plt.text(SRP["text_bpol"][0], SRP["text_bpol"][1], SRP["text_bpol"][2],transform=SRP["fig"].transFigure)
+            plt.text(SRP["text_pol"][0], SRP["text_pol"][1], SRP["text_pol"][2],transform=SRP["fig"].transFigure)
 
-            #bar = plt.axes(SRP["bar_save"])
+            plt.text(SRP["text_result"][0], SRP["text_result"][1], SRP["text_result"][2],transform=SRP["fig"].transFigure)
+
+            bar = plt.axes(SRP["bar_save"])
+            SRP["button_save"] = Button(bar, SRP["info_save"][0])
 
             #update_sr(None)
-            IX = copy.copy(I)
+            IX = copy.copy(label_image)
             SRP["image_map"] = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
             SRP["aximg_map"] = SRP["ax"][SRP["axidx_piece"]].imshow(SRP["image_map"])
             SRP["slider_angle"].on_changed(update_sr)
