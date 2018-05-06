@@ -393,19 +393,36 @@ def view_rotations(fake=False):
             ax[2].axis('off')
             plt.show()
 
-def init_sr():
-    global aval
+def init_sr(fake):
     global SRP
-    global ignore_sr_update
+    if fake:
+        # Create I, the image
+        global I
+        v=75
+        I = data.coins()[v:-v,v:-v]
 
-    if False:
-        # How to get a piece by label
-        label = mylabels[0]
-        (y1, x1, y2, x2) = labelinfo[label]
-        # Create P, the piece
-        P = copy.copy(I[y1:y2+1, x1:x2+1])
-        LP = label_image[y1:y2+1, x1:x2+1]
-        P[LP != label] = 0
+        # Create label_info, dict of pieces with labels and bounding boxes
+        from skimage.filters import threshold_otsu
+        from skimage.measure import label as labelit
+        thresh = threshold_otsu(I)
+        bw = closing(I > thresh, square(3))
+        label_image = labelit(bw)
+        properties = regionprops(label_image)
+        labelinfo = {}
+        for proper in properties:
+            if proper.area > 100:
+                labelinfo[proper.label] = proper.bbox
+
+        # Create mylabels, a sorted list of labels for use as identifiers
+        global mylabels
+        mylabels = sorted(labelinfo)
+
+        # Create masks["pieces"], for use as in main
+        global masks
+        masks = {}
+        m = copy.copy(label_image)
+        m[label_image > 0] = 255
+        masks["pieces"] = m
 
     (X1, Y1, YD, W1, H1) = (0.1, 0.4, 0.07, 0.8, 0.03)
     # This dict holds parameters for setup of the visual elements
@@ -419,13 +436,13 @@ def init_sr():
         "axidx_off"    : [2,3],
         "bar_label"    : [X1, Y1 - 0*YD, W1, H1],
         "slider_label" : None,
-        "info_label"   : ["Label", 0, 500, "%.0f"],
+        "info_label"   : ["Label", mylabels[0], mylabels[-1], mylabels[0], "%.0f"],
         "bar_angles"   : [0.2, Y1 - 2*YD, 0.07, 4*H1],
-        "info_angles"  : [("True", "False", "All")],
+        "info_angles"  : [("True", "False", "All"), 2],
         "text_angles"  : [0.1, Y1 - 1*YD, "Show Angles:"],
         "radio_angles" : None,
         "bar_pols"     : [0.4, Y1 - 2*YD, 0.07, 4*H1],
-        "info_pols"    : [("True", "False", "All")],
+        "info_pols"    : [("True", "False", "All"), 2],
         "text_pols"    : [0.3, Y1 - 1*YD, "Show Polarizations:"],
         "radio_pols"   : None,
         "text_bangle"  : [0.1, Y1 - 2.5*YD, "Angle Bool:"],
@@ -442,8 +459,61 @@ def init_sr():
         "btn_save"     : None,
         #val_label = 0.0
         }
-    aval = 0
-    ignore_sr_update = False
+
+    SRP["fig"], ax = plt.subplots(SRP["iy"],SRP["ix"],figsize=(14,7))
+    SRP["ax"] = np.atleast_1d(ax.ravel())
+    SRP["aximg_map"] = SRP["ax"][SRP["axidx_map"]].imshow(I)
+
+    for idx in SRP["axidx_off"]:
+        SRP["ax"][idx].axis('off')
+
+    bar = plt.axes(SRP["bar_label"])
+    SRP["slider_angle"] = Slider(bar, SRP["info_label"][0],
+        SRP["info_label"][1], SRP["info_label"][2],
+        valinit=SRP["info_label"][3],
+        valfmt=SRP["info_label"][4])
+
+    plt.text(SRP["text_angles"][0], SRP["text_angles"][1], SRP["text_angles"][2],transform=SRP["fig"].transFigure)
+    bar = plt.axes(SRP["bar_angles"])
+    SRP["radio_angles"] = RadioButtons(bar, SRP["info_angles"][0], active=SRP["info_angles"][1])
+
+    plt.text(SRP["text_pols"][0], SRP["text_pols"][1], SRP["text_pols"][2],transform=SRP["fig"].transFigure)
+    bar = plt.axes(SRP["bar_pols"])
+    SRP["radio_pols"] = RadioButtons(bar, SRP["info_pols"][0], active=SRP["info_pols"][1])
+
+    bar = plt.axes(SRP["bar_save"])
+    SRP["button_save"] = Button(bar, SRP["info_save"][0])
+
+    # Specific piece calculations
+    if True:
+        # Get a piece by label
+        label = mylabels[0]
+
+        # Calculate angles
+        # ---------------------
+        # here
+        # ---------------------
+
+        plt.text(SRP["text_bangle"][0], SRP["text_bangle"][1], SRP["text_bangle"][2],transform=SRP["fig"].transFigure)
+        plt.text(SRP["text_angle"][0], SRP["text_angle"][1], SRP["text_angle"][2],transform=SRP["fig"].transFigure)
+
+        plt.text(SRP["text_bpol"][0], SRP["text_bpol"][1], SRP["text_bpol"][2],transform=SRP["fig"].transFigure)
+        plt.text(SRP["text_pol"][0], SRP["text_pol"][1], SRP["text_pol"][2],transform=SRP["fig"].transFigure)
+
+        plt.text(SRP["text_result"][0], SRP["text_result"][1], SRP["text_result"][2],transform=SRP["fig"].transFigure)
+
+        (y1, x1, y2, x2) = labelinfo[label]
+        # Create P, the piece
+        P = copy.copy(I[y1:y2+1, x1:x2+1])
+        LP = label_image[y1:y2+1, x1:x2+1]
+        P[LP != label] = 0
+
+        # Rotate if indicated
+        #IX = copy.copy(label_image)
+        #SRP["image_map"] = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
+        #SRP["aximg_map"] = SRP["ax"][SRP["axidx_piece"]].imshow(SRP["image_map"])
+
+        SRP["aximg_piece"] = SRP["ax"][SRP["axidx_piece"]].imshow(P)
 
 def update_sr(val):
     global I, IMX
@@ -494,69 +564,10 @@ def foo():
 
 def save_rotations(fake=False):
     if fake:
-        # Create I, the image
-        global I
-        v=75
-        I = data.coins()[v:-v,v:-v]
-
-        # Create label_info, dict of pieces with labels and bounding boxes
-        from skimage.filters import threshold_otsu
-        thresh = threshold_otsu(I)
-        bw = closing(I > thresh, square(3))
-        label_image = label(bw)
-        properties = regionprops(label_image)
-        labelinfo = {}
-        for proper in properties:
-            if proper.area > 100:
-                labelinfo[proper.label] = proper.bbox
-
-        # Create mylabels, a sorted list of labels for use as identifiers
-        global mylabels
-        mylabels = sorted(labelinfo)
-
-        # Create masks["pieces"], for use as in main
-        global masks
-        masks = {}
-        m = copy.copy(label_image)
-        m[label_image > 0] = 255
-        masks["pieces"] = m
-
-        init_sr()
+        init_sr(fake)
         if True:
-            SRP["fig"], ax = plt.subplots(SRP["iy"],SRP["ix"],figsize=(14,7))
-            SRP["ax"] = np.atleast_1d(ax.ravel())
-            SRP["aximg_map"] = SRP["ax"][SRP["axidx_map"]].imshow(I)
-            SRP["aximg_piece"] = SRP["ax"][SRP["axidx_piece"]].imshow(I)
-            for idx in SRP["axidx_off"]:
-                SRP["ax"][idx].axis('off')
-
-            bar = plt.axes(SRP["bar_label"])
-            SRP["slider_angle"] = Slider(bar, SRP["info_label"][0],
-                SRP["info_label"][1], SRP["info_label"][2], valinit=aval,
-                valfmt=SRP["info_label"][3])
-
-            plt.text(SRP["text_angles"][0], SRP["text_angles"][1], SRP["text_angles"][2],transform=SRP["fig"].transFigure)
-            bar = plt.axes(SRP["bar_angles"])
-            SRP["radio_angles"] = RadioButtons(bar, SRP["info_angles"][0])
-            plt.text(SRP["text_bangle"][0], SRP["text_bangle"][1], SRP["text_bangle"][2],transform=SRP["fig"].transFigure)
-            plt.text(SRP["text_angle"][0], SRP["text_angle"][1], SRP["text_angle"][2],transform=SRP["fig"].transFigure)
-
-            plt.text(SRP["text_pols"][0], SRP["text_pols"][1], SRP["text_pols"][2],transform=SRP["fig"].transFigure)
-            bar = plt.axes(SRP["bar_pols"])
-            SRP["radio_pols"] = RadioButtons(bar, SRP["info_pols"][0])
-            plt.text(SRP["text_bpol"][0], SRP["text_bpol"][1], SRP["text_bpol"][2],transform=SRP["fig"].transFigure)
-            plt.text(SRP["text_pol"][0], SRP["text_pol"][1], SRP["text_pol"][2],transform=SRP["fig"].transFigure)
-
-            plt.text(SRP["text_result"][0], SRP["text_result"][1], SRP["text_result"][2],transform=SRP["fig"].transFigure)
-
-            bar = plt.axes(SRP["bar_save"])
-            SRP["button_save"] = Button(bar, SRP["info_save"][0])
-
             #update_sr(None)
-            IX = copy.copy(label_image)
-            SRP["image_map"] = transform.rotate(IX, aval, resize=True, mode='constant', cval=0)
-            SRP["aximg_map"] = SRP["ax"][SRP["axidx_piece"]].imshow(SRP["image_map"])
-            SRP["slider_angle"].on_changed(update_sr)
+            #SRP["slider_angle"].on_changed(update_sr)
             plt.show()
     else:
         pass
