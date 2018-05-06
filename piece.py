@@ -162,11 +162,17 @@ class Piece(basic):
         self.layer = 1
         self.dst_angle = 0
         self.dst_polarity = 0
+        self.dst_result = 0
         self.dst_x = 0
         self.dst_y = 0
         self.dst_w = w
         self.dst_h = h
         self.edges = []  # Edges
+
+    def set_result(self):
+        self.dst_result = (45.0 +
+            int(self.dst_b_angle) * self.dst_angle +
+            int(self.dst_b_polarity) * self.dst_polarity) % 360.0 - 45.0
 
 if __name__ == "__main__":
     p = Piece(10, 10, 30, 40, 1000)
