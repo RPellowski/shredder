@@ -97,6 +97,7 @@ from skimage.morphology import closing, square
 from skimage.measure import label, regionprops
 
 def label_blobs():
+    global mylabels
     I1 = copy.copy(I)
     I1[masks["pieces"]] = 255
     I1[~masks["pieces"]] = 0
@@ -113,6 +114,7 @@ def label_blobs():
             pieces += 1
             labelinfo.append((proper.label, proper.bbox))
     logger.info("Labeled pieces: {}".format(pieces))
+    mylabels = sorted([l[0] for l in labelinfo])
     if False:
         fig, ax = plt.subplots(1,figsize=(14,7))
         ax.imshow(I)
@@ -457,11 +459,14 @@ def init_sr():
     SRP["fig"], ax = plt.subplots(SRP["iy"],SRP["ix"],figsize=(14,7))
     SRP["ax"] = np.atleast_1d(ax.ravel())
 
+    (y1, x1, y2, x2) = labelinfo[cur_label]
     # Show the image, I
     SRP["aximg_map"] = SRP["ax"][SRP["axidx_map"]].imshow(I)
+    c = plt.Rectangle((int(x1),int(y1)), int(x2-x1), int(y2-y1),
+        linewidth=1, edgecolor="white", facecolor='none')
+    SRP["ax"][SRP["axidx_map"]].add_patch(c)
 
     # Create P, the piece
-    (y1, x1, y2, x2) = labelinfo[SRP["cur_label"]]
     P = copy.copy(I[y1:y2+1, x1:x2+1])
     LP = label_image[y1:y2+1, x1:x2+1]
     P[LP != SRP["cur_label"]] = 0
@@ -511,18 +516,59 @@ def init_sr():
 
     ignore_sr_update = False
 
+def update_sr_images():
+    cur_label = SRP["cur_label"]
+    if True:
+        piece = Pieces[cur_label]
+        # do the full update
+        (y1, x1, y2, x2) = labelinfo[cur_label]
+
+        # Show the image, I
+        SRP["aximg_map"].set_data(I)
+        if True:
+            ax = SRP["ax"][SRP["axidx_map"]]
+            while len(ax.patches) > 0:
+                del ax.patches[0]
+            c = plt.Rectangle((int(x1),int(y1)), int(x2-x1), int(y2-y1),
+                linewidth=1, edgecolor="white", facecolor='none')
+            ax.add_patch(c)
+
+        # Create P, the piece
+        ax = SRP["ax"][SRP["axidx_piece"]]
+        while len(ax.images) > 0:
+            del ax.images[0]
+        P = copy.copy(I[y1:y2+1, x1:x2+1])
+        LP = label_image[y1:y2+1, x1:x2+1]
+        P[LP != cur_label] = 0
+        # Rotate if indicated
+        P = transform.rotate(P, piece.dst_result, resize=True, mode='constant', cval=0)
+        if True:
+            del SRP["aximg_piece"]
+            SRP["aximg_piece"] = SRP["ax"][SRP["axidx_piece"]].imshow(P)
+        else:
+            SRP["aximg_piece"].set_data(P)
+
+def update_sr_rot(val):
+    piece = Pieces[SRP["cur_label"]]
+    piece.set_b_angle(True)
+    piece.set_angle(val)
+    update_sr_images()
+
 def update_sr_label(val):
     global ignore_sr_update
     if ignore_sr_update:
         return
-    new_val = round(SRP["slider_label"].val)
-    # See if new_val is in current scope (based on show angle bool and pol
+
+    new_label = round(SRP["slider_label"].val)
+    ignore_sr_update = True
+    SRP["slider_label"].set_val(new_label)
+    ignore_sr_update = False
+
+    # See if new_label is in current scope (based on show angle bool and pol
     # bool). It may be the same as current_label but Image could change
-    if new_val != SRP["cur_label"]:
-        ignore_sr_update = True
-        SRP["slider_label"].set_val(new_val)
-        ignore_sr_update = False
-        # do the full update
+    if new_label != SRP["cur_label"]:
+        SRP["cur_label"] = new_label
+        update_sr_images()
 
 def update_sr():
     global I, IMX
@@ -623,9 +669,10 @@ def save_rotations(fake=False):
     init_sr()
     if True:
         SRP["slider_label"].on_changed(update_sr_label)
+        SRP["slider_rot"].on_changed(update_sr_rot)
         plt.show()
 
-if __name__ == '__ain__':
+if __name__ == '__main__':
     #io.find_available_plugins() #
     global logger
     global masks
@@ -675,6 +722,10 @@ else:
     '''
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
-    save_rotations(fake=True)
+    #save_rotations(fake=True)
+    labelinfo = [(1,(1,2,3,4)),(2,(2,4,6,8))]
+    print sorted([l[0] for l in labelinfo])
+    #mylabels = sorted([l[0] for l in labelinfo])
+    #print mylabels
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))

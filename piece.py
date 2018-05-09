@@ -169,6 +169,22 @@ class Piece(basic):
         self.dst_h = h
         self.edges = []  # Edges
 
+    def set_b_angle(self, b_angle):
+        self.dst_b_angle = b_angle
+        self.set_result()
+
+    def set_angle(self, angle):
+        self.dst_angle = angle
+        self.set_result()
+
+    def set_b_polarity(self, b_polarity):
+        self.dst_b_polarity = b_polarity
+        self.set_result()
+
+    def set_polarity(self, polarity):
+        self.dst_polarity = polarity
+        self.set_result()
+
     def set_result(self):
         self.dst_result = (45.0 +
             int(self.dst_b_angle) * self.dst_angle +
