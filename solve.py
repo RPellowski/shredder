@@ -108,17 +108,17 @@ def label_blobs():
     label_image = label(bw)
     properties = regionprops(label_image)
     pieces = 0
-    labelinfo = []
+    labelinfo = {}
     for proper in properties:
         if proper.area > 100:
             pieces += 1
-            labelinfo.append((proper.label, proper.bbox))
+            labelinfo[proper.label] = proper.bbox
     logger.info("Labeled pieces: {}".format(pieces))
-    mylabels = sorted([l[0] for l in labelinfo])
+    mylabels = sorted(labelinfo.keys())
     if False:
         fig, ax = plt.subplots(1,figsize=(14,7))
         ax.imshow(I)
-        for _,bbox in labelinfo:
+        for _,bbox in labelinfo.items():
             (y1, x1, y2, x2) = bbox
             c = plt.Rectangle((int(x1),int(y1)), int(x2-x1), int(y2-y1),
                 linewidth=1, edgecolor="white", facecolor='none')
@@ -127,8 +127,7 @@ def label_blobs():
     return (label_image, labelinfo)
 
 def generate_pieces_and_metadata(label_image, labelinfo):
-    for linf in labelinfo:
-        label, bbox = linf
+    for label, bbox in labelinfo.items():
         (y1, x1, y2, x2) = bbox
         P = copy.copy(I[y1:y2+1, x1:x2+1])
         LP = label_image[y1:y2+1, x1:x2+1]
@@ -178,7 +177,7 @@ def generate_pieces_and_metadata(label_image, labelinfo):
 
 def show_top_pieces(red=False, blue=False, black=False):
     # consume label:bbox as dict
-    d = dict(labelinfo)
+    d = labelinfo
 
     # Now for red line test ----------------------
     # get top red line pieces
@@ -331,7 +330,7 @@ def get_orientation_angles(mask="bluelines", interactive=False):
     global min_pixels_for_orientation, min_lines_for_orientation
     global M, P
     global cur_mask, cur_label
-    d = dict(labelinfo)
+    d = labelinfo
     min_pixels_for_orientation = 50
     min_lines_for_orientation = 2
     cur_mask = mask
@@ -377,8 +376,7 @@ def view_rotations(fake=False):
         p.dst_b_angle = True
         p.dst_angle = 10.0
         Pieces[(42, 0)] = p
-    for linf in labelinfo:
-        label, bbox = linf
+    for label, bbox in labelinfo.items():
         (y1, x1, y2, x2) = bbox
         P = copy.copy(I[y1:y2+1, x1:x2+1])
         LP = label_image[y1:y2+1, x1:x2+1]
@@ -399,7 +397,7 @@ def init_sr():
     global SRP
     global ignore_sr_update
     cur_label = mylabels[0]
-    piece = Pieces[cur_label]
+    piece = Pieces[(cur_label, 0)]
     (X1, Y1, YD, W1, H1) = (0.1, 0.4, 0.07, 0.8, 0.03)
     # This dict holds parameters for setup of the visual elements
     SRP = {
@@ -519,7 +517,7 @@ def init_sr():
 def update_sr_images():
     cur_label = SRP["cur_label"]
     if True:
-        piece = Pieces[cur_label]
+        piece = Pieces[(cur_label, 0)]
         # do the full update
         (y1, x1, y2, x2) = labelinfo[cur_label]
 
@@ -548,24 +546,45 @@ def update_sr_images():
         else:
             SRP["aximg_piece"].set_data(P)
 
+    # Specific piece calculations
+    s = SRP["text_bangle"][2].format(piece.dst_b_angle)
+    SRP["wid_bangle"].set_text(s)
+    s = SRP["text_angle"][2].format(piece.dst_angle)
+    SRP["wid_angle"].set_text(s)
+
+    s = SRP["text_bpol"][2].format(piece.dst_b_polarity)
+    SRP["wid_bpol"].set_text(s)
+    s = SRP["text_pol"][2].format(piece.dst_polarity)
+    SRP["wid_pol"].set_text(s)
+
+    s = SRP["text_result"][2].format(piece.dst_result)
+    SRP["wid_result"].set_text(s)
+
 def update_sr_rot(val):
-    piece = Pieces[SRP["cur_label"]]
+    if ignore_sr_update:
+        return
+    piece = Pieces[(SRP["cur_label"], 0)]
     piece.set_b_angle(True)
     piece.set_angle(val)
     update_sr_images()
 
+def nearest_label(new_label):
+    # TBD- See if new_label is in current scope (based on show angle bool and pol
+    # bool). It may be the same as current_label but Image could change
+    return min(mylabels, key=lambda x : abs(x - int(round(new_label))))
+
 def update_sr_label(val):
+Need to set rotation bar based on piece- could change with change of label or
+slider itself
     global ignore_sr_update
     if ignore_sr_update:
         return
 
-    new_label = round(SRP["slider_label"].val)
+    new_label = nearest_label(SRP["slider_label"].val)
     ignore_sr_update = True
     SRP["slider_label"].set_val(new_label)
     ignore_sr_update = False
 
-    # See if new_label is in current scope (based on show angle bool and pol
-    # bool). It may be the same as current_label but Image could change
     if new_label != SRP["cur_label"]:
         SRP["cur_label"] = new_label
         update_sr_images()
@@ -575,7 +594,7 @@ def update_sr():
     global aval
     if True:
         # Get a piece by label
-        piece = Pieces[SRP["cur_label"]]
+        piece = Pieces[(SRP["cur_label"], 0)]
 
         # Calculate angles
         piece.set_result()
@@ -644,7 +663,7 @@ def save_rotations(fake=False):
 
         # Create mylabels, a sorted list of labels for use as identifiers
         global mylabels
-        mylabels = sorted(labelinfo)
+        mylabels = sorted(labelinfo.keys())
 
         # Create masks["pieces"], for use as in main
         global masks
@@ -660,7 +679,7 @@ def save_rotations(fake=False):
             piece = Piece(label, x1, y1, x2 - x1 + 1, y2 - y1 + 1)
             piece.dst_angle = foo
             piece.dst_b_angle = True
-            Pieces[label] = piece
+            Pieces[(label, 0)] = piece
             piece.set_result()
             foo += 5
 
@@ -672,7 +691,7 @@ def save_rotations(fake=False):
         SRP["slider_rot"].on_changed(update_sr_rot)
         plt.show()
 
-if __name__ == '__main__':
+if __name__ == '_main__':
     #io.find_available_plugins() #
     global logger
     global masks
@@ -722,9 +741,9 @@ else:
     '''
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
-    #save_rotations(fake=True)
-    labelinfo = [(1,(1,2,3,4)),(2,(2,4,6,8))]
-    print sorted([l[0] for l in labelinfo])
+    save_rotations(fake=True)
+    #labelinfo = [(1,(1,2,3,4)),(2,(2,4,6,8))]
+    #print sorted([l[0] for l in labelinfo])
     #mylabels = sorted([l[0] for l in labelinfo])
     #print mylabels
     t1 = logmetrics.unix_time()
