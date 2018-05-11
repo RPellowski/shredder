@@ -238,7 +238,7 @@ def show_top_pieces(red=False, blue=False, black=False):
 
 from skimage.transform import (hough_line, hough_line_peaks, probabilistic_hough_line)
 from skimage.feature import canny
-from matplotlib.widgets import Slider, Button, RadioButtons
+from matplotlib.widgets import Slider, Button, RadioButtons, CheckButtons
 
 def get_orientation_lines():
     '''
@@ -423,7 +423,7 @@ def init_sr():
         "text_pols"    : [0.3, Y1 - 1*YD, "Show Polarizations:"],
         "radio_pols"   : None,
 
-        "bar_rot"      : [X1, Y1 - 2.5*YD, W1, H1],
+        "bar_rot"      : [X1, Y1 - 3*YD, W1, H1],
         "info_rot"     : ["Rotation", -45., 315., piece.dst_result, "%.1f"],
         "slider_rot"   : None,
 
@@ -447,15 +447,42 @@ def init_sr():
         #"image_piece"  : None,
         #"aximg_piece"  : None,
 
-        "bar_save"     : [0.7, Y1 - 1*YD, 0.05, 2*H1],
+        "bar_prev"     : [0.6, Y1 - 1.5*YD, 0.05, 2*H1],
+        "info_prev"    : ["Prev"],
+        "btn_prev"     : None,
+
+        "bar_next"     : [0.7, Y1 - 1.5*YD, 0.05, 2*H1],
+        "info_next"    : ["Next"],
+        "btn_next"     : None,
+
+        "bar_save"     : [0.8, Y1 - 1.5*YD, 0.05, 2*H1],
         "info_save"    : ["Save"],
         "btn_save"     : None,
 
+        "bar_b_bangle"   : [0.1, Y1 - 4*YD, 0.08, 2*H1],
+        "info_b_bangle"  : ["Set b_angle"],
+        "check_b_bangle" : None,
+
+        "bar_b_bpol"   : [0.3, Y1 - 4*YD, 0.08, 2*H1],
+        "info_b_bpol"  : ["Set b_pol"],
+        "check_b_bpol" : None,
+
+        "bar_invert"   : [0.4, Y1 - 4*YD, 0.08, 2*H1],
+        "info_invert"  : ["Set invert"],
+        "check_invert" : None,
         "cur_label"    : cur_label,
         }
 
     SRP["fig"], ax = plt.subplots(SRP["iy"],SRP["ix"],figsize=(14,7))
     SRP["ax"] = np.atleast_1d(ax.ravel())
+
+    bar = plt.axes(SRP["bar_b_bangle"])
+    SRP["check_b_bangle"] = CheckButtons(bar, SRP["info_b_bangle"], [0], borderwidth=0)
+
+    bar = plt.axes(SRP["bar_b_bpol"])
+    SRP["check_b_bpol"] = CheckButtons(bar, SRP["info_b_bpol"], [0])
+    bar = plt.axes(SRP["bar_invert"])
+    SRP["check_invert"] = CheckButtons(bar, SRP["info_invert"], [0])
 
     (y1, x1, y2, x2) = labelinfo[cur_label]
     # Show the image, I
@@ -494,6 +521,12 @@ def init_sr():
         SRP["info_rot"][1], SRP["info_rot"][2],
         valinit=SRP["info_rot"][3],
         valfmt=SRP["info_rot"][4])
+
+    bar = plt.axes(SRP["bar_prev"])
+    SRP["button_prev"] = Button(bar, SRP["info_prev"][0])
+
+    bar = plt.axes(SRP["bar_next"])
+    SRP["button_next"] = Button(bar, SRP["info_next"][0])
 
     bar = plt.axes(SRP["bar_save"])
     SRP["button_save"] = Button(bar, SRP["info_save"][0])
@@ -574,8 +607,8 @@ def nearest_label(new_label):
     return min(mylabels, key=lambda x : abs(x - int(round(new_label))))
 
 def update_sr_label(val):
-Need to set rotation bar based on piece- could change with change of label or
-slider itself
+    #Need to set rotation bar based on piece- could change with change of label or
+    #slider itself
     global ignore_sr_update
     if ignore_sr_update:
         return
