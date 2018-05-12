@@ -160,8 +160,8 @@ class Piece(basic):
         # Features that might change across the set of temp candidates
         self.candidate = 0
         self.layer = 1
-        self.dst_angle = 0
-        self.dst_polarity = 0
+        self.dst_angle = 0.0
+        self.dst_polarity = 0.0
         self.dst_result = 0
         self.dst_x = 0
         self.dst_y = 0

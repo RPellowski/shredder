@@ -10,6 +10,7 @@ import copy
 import os
 import sys
 from math import atan2, pi, atan
+from collections import *
 
 DPI = 400
 def open_source_image():
@@ -363,9 +364,22 @@ def get_orientation_angles(mask="bluelines", interactive=False):
         (lines, angles) = get_orientation_lines()
         if len(lines) >= min_lines_for_orientation:
             aa = np.median(angles)
-            Pieces[(cur_label, 0)].dst_b_angle = True
-            Pieces[(cur_label, 0)].dst_angle = aa
+            Pieces[(cur_label, 0)].set_b_angle(True)
+            Pieces[(cur_label, 0)].set_angle(aa)
             #print "label:", cur_label, "angle:", aa, lines, angles
+
+def show_orientation_stats():
+    stats = defaultdict(int)
+    EPS = 1e-5
+    for _, piece in Pieces.items():
+        #print piece
+        stats["b_angle"]    += int(piece.dst_b_angle)
+        stats["angle"]      += int((abs(piece.dst_angle) - EPS) > 0)
+        stats["b_polarity"] += int(piece.dst_b_polarity)
+        stats["polarity"]   += int((abs(piece.dst_polarity) - EPS) > 0)
+        stats["result"]     += int((abs(piece.dst_result) - EPS) > 0)
+        stats["pieces"]     += 1
+    print stats
 
 from skimage import data, transform
 def view_rotations(fake=False):
@@ -373,8 +387,8 @@ def view_rotations(fake=False):
         global I
         I = data.checkerboard()
         p = Piece(42, 0, 0, I.shape[0], I.shape[1])
-        p.dst_b_angle = True
-        p.dst_angle = 10.0
+        p.set_b_angle(True)
+        p.set_angle(10.0)
         Pieces[(42, 0)] = p
     for label, bbox in labelinfo.items():
         (y1, x1, y2, x2) = bbox
@@ -477,7 +491,7 @@ def init_sr():
     SRP["ax"] = np.atleast_1d(ax.ravel())
 
     bar = plt.axes(SRP["bar_b_bangle"])
-    SRP["check_b_bangle"] = CheckButtons(bar, SRP["info_b_bangle"], [0], borderwidth=0)
+    SRP["check_b_bangle"] = CheckButtons(bar, SRP["info_b_bangle"], [0])
 
     bar = plt.axes(SRP["bar_b_bpol"])
     SRP["check_b_bpol"] = CheckButtons(bar, SRP["info_b_bpol"], [0])
@@ -710,8 +724,8 @@ def save_rotations(fake=False):
         for label in mylabels:
             (y1, x1, y2, x2) = labelinfo[label]
             piece = Piece(label, x1, y1, x2 - x1 + 1, y2 - y1 + 1)
-            piece.dst_angle = foo
-            piece.dst_b_angle = True
+            piece.set_angle(foo)
+            piece.set_b_angle(True)
             Pieces[(label, 0)] = piece
             piece.set_result()
             foo += 5
@@ -724,7 +738,7 @@ def save_rotations(fake=False):
         SRP["slider_rot"].on_changed(update_sr_rot)
         plt.show()
 
-if __name__ == '_main__':
+if __name__ == '__main__':
     #io.find_available_plugins() #
     global logger
     global masks
@@ -750,10 +764,11 @@ if __name__ == '_main__':
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
         #show_top_pieces(red=True, blue=True, black=True)
-        get_orientation_angles("redlines")
+        #get_orientation_angles("redlines")
         get_orientation_angles("bluelines")
+        show_orientation_stats()
         #view_rotations()
-        save_rotations()
+        #save_rotations()
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt")
     except:
