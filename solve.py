@@ -189,7 +189,7 @@ def show_top_pieces(red=False, blue=False, black=False):
         fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
         for i in range(SHOW):
             label = top[i].label
-            print label,top[i].src_n_rline_pix, d[label]
+            #print label,top[i].src_n_rline_pix, d[label]
             (y1, x1, y2, x2) = d[label]
             P = I[y1:y2+1, x1:x2+1]
             LP = label_image[y1:y2+1, x1:x2+1]
@@ -208,7 +208,7 @@ def show_top_pieces(red=False, blue=False, black=False):
         fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
         for i in range(SHOW):
             label = top[i].label
-            print label,top[i].src_n_bline_pix, d[label]
+            #print label,top[i].src_n_bline_pix, d[label]
             (y1, x1, y2, x2) = d[label]
             P = I[y1:y2+1, x1:x2+1]
             LP = label_image[y1:y2+1, x1:x2+1]
@@ -227,7 +227,7 @@ def show_top_pieces(red=False, blue=False, black=False):
         fig, ax = plt.subplots(2,SHOW,figsize=(14,7))
         for i in range(SHOW):
             label = top[i].label
-            print label,top[i].src_n_bink_pix, d[label]
+            #print label,top[i].src_n_bink_pix, d[label]
             (y1, x1, y2, x2) = d[label]
             P = I[y1:y2+1, x1:x2+1]
             LP = label_image[y1:y2+1, x1:x2+1]
@@ -372,14 +372,15 @@ def show_orientation_stats():
     stats = defaultdict(int)
     EPS = 1e-5
     for _, piece in Pieces.items():
-        #print piece
         stats["b_angle"]    += int(piece.dst_b_angle)
         stats["angle"]      += int((abs(piece.dst_angle) - EPS) > 0)
         stats["b_polarity"] += int(piece.dst_b_polarity)
         stats["polarity"]   += int((abs(piece.dst_polarity) - EPS) > 0)
         stats["result"]     += int((abs(piece.dst_result) - EPS) > 0)
         stats["pieces"]     += 1
-    print stats
+    for stat in "b_angle", "angle", "b_polarity", "polarity", "result":
+        logger.info( \
+            "{}: {}, {:.1f}%".format(stat, stats[stat], stats[stat] * 100.0 / stats["pieces"]))
 
 from skimage import data, transform
 def view_rotations(fake=False):
@@ -397,7 +398,7 @@ def view_rotations(fake=False):
         P[LP != label] = 0
         #for piece in Pieces.values():
         piece = Pieces[(label, 0)]
-        print piece.label, piece.dst_angle
+        #print piece.label, piece.dst_angle
         if not piece.dst_b_angle:
             fig, ax = plt.subplots(1,3,figsize=(14,7))
             IX = copy.copy(P)
@@ -669,7 +670,7 @@ def foo():
             IMX = ax[1].imshow(IX)
         else:
             IMX.set_data(IX)
-       # print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
+        #print ax[1].get_xbound(), ax[1].get_ybound(), ax[1].get_xlim(), ax[1].get_ylim(), IX.shape, IX.size, IMX.get_extent(), IMX.get_size()
         #IMX.set_extent(IMX.get_extent())
         if False:
             ax[1].relim()
@@ -763,7 +764,7 @@ if __name__ == '__main__':
 
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
-        #show_top_pieces(red=True, blue=True, black=True)
+        #show_top_pieces(red=True) #, blue=True, black=True)
         #get_orientation_angles("redlines")
         get_orientation_angles("bluelines")
         show_orientation_stats()

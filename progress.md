@@ -1,5 +1,22 @@
 # Progress log
 
+## Week 7 Retrospective
+
+### The good
+
+* Refocused efforts on customer value of stories and size of stories
+* Algorithm automatically solves orientation for 78% of the pieces
+
+### The bad
+
+* Passed the historic first solver milestone without even solving the first puzzle
+* Wasted a lot of time on a story involving interactive angle selection
+* No velocity for weeks
+
+### Both good and bad
+
+* Learned Python matplotlib widgets, including bugs and quirks
+
 ## Week 3 Retrospective
 
 ### The good
