@@ -371,7 +371,7 @@ def get_orientation_angles(mask="bluelines", interactive=False):
 def show_orientation_stats():
     stats = defaultdict(int)
     EPS = 1e-5
-    for _, piece in Pieces.items():
+    for piece in Pieces.values():
         stats["b_angle"]    += int(piece.dst_b_angle)
         stats["angle"]      += int((abs(piece.dst_angle) - EPS) > 0)
         stats["b_polarity"] += int(piece.dst_b_polarity)
@@ -382,7 +382,55 @@ def show_orientation_stats():
         logger.info( \
             "{}: {}, {:.1f}%".format(stat, stats[stat], stats[stat] * 100.0 / stats["pieces"]))
 
-from skimage import data, transform
+def show_black_ink_stats():
+    stats = defaultdict(int)
+    MIN_PIX = 1
+    for piece in Pieces.values():
+        stats["blue"]   += int(piece.src_n_bline_pix >= MIN_PIX)
+        stats["black"]  += int(piece.src_n_bink_pix >= MIN_PIX)
+        stats["pieces"] += 1
+    for stat in ("black","blue"), ("black","pieces"), ("blue","pieces"):
+        logger.info( \
+            "Any piece with >= {} pixels: {} {}, {} {}, {:.1f}%".format(
+            MIN_PIX,
+            stats[stat[0]], stat[0],
+            stats[stat[1]], stat[1],
+            100 * stats[stat[0]] / stats[stat[1]]))
+    stats = defaultdict(int)
+    for piece in Pieces.values():
+        if piece.dst_b_angle:
+            stats["blue"]   += int(piece.src_n_bline_pix >= MIN_PIX)
+            stats["black"]  += int(piece.src_n_bink_pix >= MIN_PIX)
+            stats["pieces"] += 1
+    for stat in ("black","blue"), ("black","pieces"), ("blue","pieces"):
+        logger.info( \
+            "Conditioned on b_angle set: {} {}, {} {}, {:.1f}%".format(
+            stats[stat[0]], stat[0],
+            stats[stat[1]], stat[1],
+            100 * stats[stat[0]] / stats[stat[1]]))
+
+from skimage import transform
+def rotate_and_count_black_blue():
+    MIN_PIX = 1
+    for label, bbox in labelinfo.items():
+        piece = Pieces[(label, 0)]
+        if piece.dst_b_angle and piece.src_n_bink_pix >= MIN_PIX:
+            (y1, x1, y2, x2) = bbox
+            P = copy.copy(I[y1:y2+1, x1:x2+1])
+            LP = label_image[y1:y2+1, x1:x2+1]
+            P[LP != label] = 0
+            RP = transform.rotate(P, piece.dst_angle, resize=True, mode='constant', cval=0)
+            RLP = transform.rotate(LP, piece.dst_angle, resize=True, mode='constant', cval=0)
+            if True:
+                fig, ax = plt.subplots(1,3,figsize=(14,7))
+                ax[0].imshow(RP)
+                ax[1].imshow(RLP)
+                ax[2].axis('off')
+                plt.show()
+
+    print "rotate_and_count_black_blue()"
+
+from skimage import data
 def view_rotations(fake=False):
     if fake:
         global I
@@ -765,9 +813,11 @@ if __name__ == '__main__':
         (label_image, labelinfo) = label_blobs()
         generate_pieces_and_metadata(label_image, labelinfo)
         #show_top_pieces(red=True) #, blue=True, black=True)
-        #get_orientation_angles("redlines")
+        get_orientation_angles("redlines")
         get_orientation_angles("bluelines")
         show_orientation_stats()
+        show_black_ink_stats()
+        rotate_and_count_black_blue()
         #view_rotations()
         #save_rotations()
     except KeyboardInterrupt:
