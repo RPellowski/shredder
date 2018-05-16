@@ -412,20 +412,48 @@ def show_black_ink_stats():
 from skimage import transform
 def rotate_and_count_black_blue():
     MIN_PIX = 1
-    for label, bbox in labelinfo.items():
+    #for label, bbox in labelinfo.items():
+    (label, bbox) = (75, labelinfo[75])
+    if True:
         piece = Pieces[(label, 0)]
         if piece.dst_b_angle and piece.src_n_bink_pix >= MIN_PIX:
             (y1, x1, y2, x2) = bbox
             P = copy.copy(I[y1:y2+1, x1:x2+1])
-            LP = label_image[y1:y2+1, x1:x2+1]
+            LP = copy.copy(label_image[y1:y2+1, x1:x2+1])
+            BLU = copy.copy(masks["bluelines"][y1:y2+1, x1:x2+1])
+            BLA = copy.copy(masks["blackink"][y1:y2+1, x1:x2+1])
             P[LP != label] = 0
+            LP[LP != label] = 0
+            BLU[LP != label] = 0
+            BLA[LP != label] = 0
+            LP[LP == label] = 255
             RP = transform.rotate(P, piece.dst_angle, resize=True, mode='constant', cval=0)
             RLP = transform.rotate(LP, piece.dst_angle, resize=True, mode='constant', cval=0)
+            RBLU = transform.rotate(BLU, piece.dst_angle, resize=True, mode='constant', cval=0)
+            RBLA = transform.rotate(BLA, piece.dst_angle, resize=True, mode='constant', cval=0)
+            #a1 = np.count_nonzero(RLP, axis=1)
+            a2 = np.count_nonzero(RBLU, axis=1)
+            #a3 = np.count_nonzero(RBLA, axis=1)
+            #c1 = np.correlate(a1, a1, "same")
+            #print c1 * 100 / max(c1)
+            c2 = 1.0 * np.correlate(a2, a2, "same")
+            N = len(c2)
+            half = c2[N//2:]
+            lengths = range(N, N//2, -1)
+            half /= lengths
+            half /= half[0]
+            #print half
+            #print c2 * 100 / max(c2)
+            #c3 = np.correlate(a3, a3, "same")
+            #print c3 * 100 / max(c3)
             if True:
-                fig, ax = plt.subplots(1,3,figsize=(14,7))
-                ax[0].imshow(RP)
-                ax[1].imshow(RLP)
-                ax[2].axis('off')
+                fig, ax = plt.subplots(1,4,figsize=(14,7))
+                ax[0].plot(half)
+                ax[1].plot(np.argsort(-half)[:15])
+                #ax[0].imshow(RP)
+                #ax[1].imshow(RLP)
+                #ax[2].imshow(RBLU)
+                #ax[3].imshow(RBLA)
                 plt.show()
 
     print "rotate_and_count_black_blue()"
