@@ -410,53 +410,64 @@ def show_black_ink_stats():
             100 * stats[stat[0]] / stats[stat[1]]))
 
 from skimage import transform
-def determine_pixels_between_blue_lines(test_label):
-    (label, bbox) = (test_label, labelinfo[test_label])
+def determine_pixels_between_blue_lines():
+    # Pixels between lines will be the modulus that wraps and overlays multiple
+    # lines of the piece.
+    # This value should be the same for all pieces of this puzzle.
+    # We must have at least 2 lines for this calculation.
+    global blue_repeat
+    global blue_below
+    global blue_mid
+    # From observation we know that the repeat is between 100 and 150 pixels
+    blue_repeat_min = 100
+    blue_repeat_max = 150
+    top = sorted(Pieces.values(), key=lambda Piece: Piece.src_n_bline_pix, reverse=True)
+    label = top[0].label
+    bbox = labelinfo[label]
     piece = Pieces[(label, 0)]
     (y1, x1, y2, x2) = bbox
     # Label mask
     LP = copy.copy(label_image[y1:y2+1, x1:x2+1])
     # Blue mask
     BLU = copy.copy(masks["bluelines"][y1:y2+1, x1:x2+1])
+    # Select this label only
     BLU[LP != label] = 0
     RBLU = transform.rotate(BLU, piece.dst_angle, resize=True, mode='constant', cval=0)
-    a = np.count_nonzero(RBLU, axis=1)
-    c = 1.0 * np.correlate(a, a, "full")
+    # Get 1D array of pixels in each row
+    flat = np.count_nonzero(RBLU, axis=1)
+    c = 1.0 * np.correlate(flat, flat, "full")
     N = len(c)
     half = c[N//2:]
     lengths = range(N, N//2, -1)
     half /= lengths
     half /= half[0]
-    print len(c), len(half), N
-    r = np.argsort(-half)[:20]
-    print r
-    return 122
+    # Only consider the selected range
+    half = half[blue_repeat_min:blue_repeat_max]
+    # Scale r back to the indices of a
+    r = np.argsort(-half) + blue_repeat_min
+    blue_repeat = r[0]
+    blue_below = blue_repeat / 20 - 1
+    blue_mid = blue_repeat / 2
+    logger.info("blue_repeat {}, blue_below {}, blue_mid {}".format(
+        blue_repeat, blue_below, blue_mid))
 
-def determine_pixels_offset(label):
-    pass
-
-def rotate_and_count_black_blue():
-    # Pixels between lines will be the modulus that wraps and overlays multiple
-    # lines of the piece.
-    # This value should be the same for all pieces of this puzzle.
-    # We must have at least 2 lines for this calculation.
-    result = determine_pixels_between_blue_lines(75)
-    print result
-    # The result is 122
-
+def determine_blue_offset(flat):
     # Pixel offset cuts the piece into two zones for voting one zone provides
     # votes for 0 degrees and the other provides votes for 180 degress.  The
     # orientation is determined by the vote result.
     # Offset is unique for each piece
-    determine_pixels_offset(75)
+    return histo
 
-def baz():
-    MIN_PIX = 1
+def rotate_and_count_black_blue():
+    determine_pixels_between_blue_lines()
+    #histo = determine_blue_offset()
+
+    min_pixels_for_polarity = 50
     #for label, bbox in labelinfo.items():
-    (label, bbox) = (75, labelinfo[75])
-    if True:
+    for label in [17,79,25,193,13]:
+        bbox = labelinfo[label]
         piece = Pieces[(label, 0)]
-        if piece.dst_b_angle and piece.src_n_bink_pix >= MIN_PIX:
+        if piece.dst_b_angle and piece.src_n_bink_pix >= min_pixels_for_polarity:
             (y1, x1, y2, x2) = bbox
             P = copy.copy(I[y1:y2+1, x1:x2+1])
             LP = copy.copy(label_image[y1:y2+1, x1:x2+1])
@@ -471,31 +482,16 @@ def baz():
             RLP = transform.rotate(LP, piece.dst_angle, resize=True, mode='constant', cval=0)
             RBLU = transform.rotate(BLU, piece.dst_angle, resize=True, mode='constant', cval=0)
             RBLA = transform.rotate(BLA, piece.dst_angle, resize=True, mode='constant', cval=0)
-            #a1 = np.count_nonzero(RLP, axis=1)
-            a2 = np.count_nonzero(RBLU, axis=1)
-            #a3 = np.count_nonzero(RBLA, axis=1)
-            #c1 = np.correlate(a1, a1, "same")
-            #print c1 * 100 / max(c1)
-            c2 = 1.0 * np.correlate(a2, a2, "full") #[15:]
-            N = len(c2)
-            half = c2[N//2:]
-            lengths = range(N, N//2, -1)
-            half /= lengths
-            half /= half[0]
-            print len(c2), len(half), N
-            #print c2 * 100 / max(c2)
-            #c3 = np.correlate(a3, a3, "same")
-            #print c3 * 100 / max(c3)
+
+            nz = np.count_nonzero(RBLU, axis=1)
+            flat = use histo function here
+
             if True:
                 fig, ax = plt.subplots(1,4,figsize=(14,7))
-                ax[0].plot(half)
-                a = np.argsort(-half)[:20]
-                print a #np.mean(a[:7])
-                ax[1].plot(a)
-                ax[2].imshow(RP)
-                #ax[1].imshow(RLP)
-                #ax[2].imshow(RBLU)
-                #ax[3].imshow(RBLA)
+                ax[0].imshow(RP)
+                ax[1].imshow(RLP)
+                ax[2].imshow(RBLU)
+                ax[3].imshow(RBLA)
                 plt.show()
 
     print "rotate_and_count_black_blue()"
