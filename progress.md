@@ -1,5 +1,25 @@
 # Progress log
 
+## Week 8 Retrospective
+
+### The good
+
+* Orientation angles are determined on 79% of pieces
+* Have an algorithm that sets polarity on over half those pieces
+
+### The bad
+
+* Not all pieces get the correct polarity based on black ink
+* Not all pieces have black ink
+* Only 47% of total pieces have angle and polarity automatically determined
+* Less development time spent on project
+* No velocity
+
+### Both good and bad
+
+* Noticed that concave/convex top and bottom edges are good indication of
+  polarity, need to pivot with a story for that
+
 ## Week 7 Retrospective
 
 ### The good

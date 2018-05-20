@@ -417,7 +417,7 @@ def determine_pixels_between_blue_lines():
     # We must have at least 2 lines for this calculation.
     global blue_repeat
     global blue_below
-    global blue_mid
+    global blue_split
     # From observation we know that the repeat is between 100 and 150 pixels
     blue_repeat_min = 100
     blue_repeat_max = 150
@@ -446,28 +446,18 @@ def determine_pixels_between_blue_lines():
     # Scale r back to the indices of a
     r = np.argsort(-half) + blue_repeat_min
     blue_repeat = r[0]
-    blue_below = blue_repeat / 20 - 1
-    blue_mid = blue_repeat / 2
+    blue_below = blue_repeat * 5 / 100 - 1
+    blue_split = blue_repeat / 2
     logger.info("blue_repeat {}, blue_below {}, blue_mid {}".format(
-        blue_repeat, blue_below, blue_mid))
-
-def determine_blue_offset(flat):
-    # Pixel offset cuts the piece into two zones for voting one zone provides
-    # votes for 0 degrees and the other provides votes for 180 degress.  The
-    # orientation is determined by the vote result.
-    # Offset is unique for each piece
-    return histo
+        blue_repeat, blue_below, blue_split))
 
 def rotate_and_count_black_blue():
     determine_pixels_between_blue_lines()
-    #histo = determine_blue_offset()
-
     min_pixels_for_polarity = 50
-    #for label, bbox in labelinfo.items():
-    for label in [17,79,25,193,13]:
-        bbox = labelinfo[label]
-        piece = Pieces[(label, 0)]
+    for piece in Pieces.values():
         if piece.dst_b_angle and piece.src_n_bink_pix >= min_pixels_for_polarity:
+            label = piece.label
+            bbox = labelinfo[label]
             (y1, x1, y2, x2) = bbox
             P = copy.copy(I[y1:y2+1, x1:x2+1])
             LP = copy.copy(label_image[y1:y2+1, x1:x2+1])
@@ -483,18 +473,43 @@ def rotate_and_count_black_blue():
             RBLU = transform.rotate(BLU, piece.dst_angle, resize=True, mode='constant', cval=0)
             RBLA = transform.rotate(BLA, piece.dst_angle, resize=True, mode='constant', cval=0)
 
-            nz = np.count_nonzero(RBLU, axis=1)
-            flat = use histo function here
+            # Pixel offset cuts the piece into two zones for voting one zone provides
+            # votes for 0 degrees and the other provides votes for 180 degress.  The
+            # orientation is determined by the vote result.
+            # Offset is unique for each piece
 
-            if True:
+            # Get 1D array of pixels in each row
+            flat = np.count_nonzero(RBLU, axis=1)
+
+            # Need to find the x offset of blue lines for this piece
+            # Place into bins, accounting for blue line repeat interval
+            histo = np.zeros(blue_repeat, dtype=np.int)
+            for val, hindex in np.nditer([flat, np.mod(np.arange(len(flat)), blue_repeat)]):
+                histo[hindex] += val
+            blue_offset = histo.argmax()
+
+            # Now to have black ink voting
+            flat = np.count_nonzero(RBLA, axis=1)
+            vindices = np.floor_divide(np.mod(np.arange(len(flat)) - blue_offset - blue_below, blue_repeat),1)# blue_split) > 0
+            vote = np.zeros(np.unique(vindices).size, dtype=np.int)
+            for val, vindex in np.nditer([flat, vindices.astype(int)]):
+                # Weight by distance from the split
+                dist = (vindex - blue_split) ** 2
+                vote[vindex] += val * dist
+
+            vote[0] = vote[:blue_split].sum()
+            vote[1] = vote[blue_split:].sum()
+            #print label, vote[0] * 100 / (vote[0] + vote[1]),vote[1] * 100 / (vote[0] + vote[1])
+            if vote[0] > vote[1]:
+                piece.set_polarity(180)
+            piece.set_b_polarity(True)
+            if False:
                 fig, ax = plt.subplots(1,4,figsize=(14,7))
                 ax[0].imshow(RP)
                 ax[1].imshow(RLP)
                 ax[2].imshow(RBLU)
                 ax[3].imshow(RBLA)
                 plt.show()
-
-    print "rotate_and_count_black_blue()"
 
 from skimage import data
 def view_rotations(fake=False):
@@ -513,10 +528,10 @@ def view_rotations(fake=False):
         #for piece in Pieces.values():
         piece = Pieces[(label, 0)]
         #print piece.label, piece.dst_angle
-        if not piece.dst_b_angle:
+        if True: #not piece.dst_b_angle:
             fig, ax = plt.subplots(1,3,figsize=(14,7))
             IX = copy.copy(P)
-            IX = transform.rotate(IX, piece.dst_angle, resize=True, mode='constant', cval=0)
+            IX = transform.rotate(IX, piece.dst_result, resize=True, mode='constant', cval=0)
             ax[0].imshow(P)
             ax[1].imshow(IX)
             ax[2].axis('off')
@@ -886,6 +901,7 @@ if __name__ == '__main__':
         rotate_and_count_black_blue()
         #view_rotations()
         #save_rotations()
+        show_orientation_stats()
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt")
     except:
@@ -906,10 +922,19 @@ else:
     '''
     logger = logmetrics.initLogger()
     t0 = logmetrics.unix_time()
-    save_rotations(fake=True)
+    #save_rotations(fake=True)
     #labelinfo = [(1,(1,2,3,4)),(2,(2,4,6,8))]
     #print sorted([l[0] for l in labelinfo])
     #mylabels = sorted([l[0] for l in labelinfo])
     #print mylabels
+    a = [1,2,10,2,6,3,5,15,7]
+    print a
+    blue_repeat = 5
+    h = np.zeros(blue_repeat, dtype=np.int)
+    for aval, hindex in np.nditer([a, np.mod(np.arange(len(a)), blue_repeat)]):
+        h[hindex] += aval
+    print h
+    m = h.argmax()
+    print m, h[m]
     t1 = logmetrics.unix_time()
     logger.debug(logmetrics.unix_time_elapsed(t0, t1))
