@@ -511,6 +511,63 @@ def rotate_and_count_black_blue():
                 ax[3].imshow(RBLA)
                 plt.show()
 
+def rle(inarray):
+        """ run length encoding. Partial credit to R rle function.
+            Multi datatype arrays catered for including non Numpy
+            returns: tuple (runlengths, startpositions, values) """
+        ia = np.asarray(inarray).flatten()                  # force numpy
+        n = len(ia)
+        if n == 0:
+            return (None, None, None)
+        else:
+            y = np.array(ia[1:] != ia[:-1])     # pairwise unequal (string safe)
+            i = np.append(np.where(y), n - 1)   # must include last element posi
+            z = np.diff(np.append(-1, i))       # run lengths
+            p = np.cumsum(np.append(0, z))[:-1] # positions
+            return(z, p, ia[i])
+
+def detect_concave_edges():
+    print "detect_concave_edges"
+    max_concave_extent = 25
+    #for piece in Pieces.values():
+    for label in [13,82,289,41,72,180,185,201]:
+        piece = Pieces[(label, 0)]
+        if not (piece.dst_b_angle and piece.dst_b_polarity):
+            continue
+        label = piece.label
+        print label
+        bbox = labelinfo[label]
+        (y1, x1, y2, x2) = bbox
+        P = copy.copy(I[y1:y2+1, x1:x2+1])
+        LP = copy.copy(label_image[y1:y2+1, x1:x2+1])
+        P[LP != label] = 0
+        LP[LP != label] = 0
+        LP[LP == label] = 255
+        RP = transform.rotate(P, piece.dst_angle, resize=True, mode='constant', cval=0)
+        RLP = transform.rotate(LP, piece.dst_angle, resize=True, mode='constant', cval=0)
+
+        sum = 0
+        for y in range(max_concave_extent):
+            z, p, i = rle(LP[y:y+1,:x2-x1+1])
+            sum += len(z) - 2
+            #print y, rle(LP[y:y+1,:x2-x1+1])
+        print "average run:", 10 * sum/max_concave_extent
+
+        sum = 0
+        for y in range(y2 - y1 - 1, y2 - y1 - max_concave_extent - 1, -1):
+            #print x1,x2,y1,y2,y
+            z, p, i = rle(LP[y:y+1,:x2-x1+1])
+            sum += len(z) - 2
+            #print y, rle(LP[y:y+1,:x2-x1+1])
+        print "average run:", 10 * sum/max_concave_extent
+
+        if True:
+            fig, ax = plt.subplots(1,4,figsize=(14,7))
+            ax[0].imshow(RP)
+            ax[1].imshow(RLP)
+            plt.show()
+        #break
+
 from skimage import data
 def view_rotations(fake=False):
     if fake:
@@ -899,9 +956,11 @@ if __name__ == '__main__':
         show_orientation_stats()
         show_black_ink_stats()
         rotate_and_count_black_blue()
+        show_orientation_stats()
+        detect_concave_edges()
+        #show_orientation_stats()
         #view_rotations()
         #save_rotations()
-        show_orientation_stats()
     except KeyboardInterrupt:
         logger.debug("KeyboardInterrupt")
     except:
